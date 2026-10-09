@@ -41,7 +41,8 @@ def load_task(conn: sqlite3.Connection, task_id: int) -> TaskOut:
     row = conn.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail='작업을 찾을 수 없어요')
-    return TaskOut(id=row['id'], text=row['text'], conditions=Conditions(**json.loads(row['conditions'])),
+    worker = conn.execute('SELECT name FROM workers WHERE id = ?', (row['worker_id'],)).fetchone()
+    return TaskOut(worker_id=row['worker_id'], worker_name=worker['name'] if worker else '', created_at=row['created_at'], id=row['id'], text=row['text'], conditions=Conditions(**json.loads(row['conditions'])),
                    checklist=_checklist(conn, task_id), run_id=row['run_id'],
                    close_requested=bool(row['close_requested']), review_status=row['review_status'],
                    review_reason=row['review_reason'], review_action=row['review_action'],
@@ -78,6 +79,35 @@ def create_task(payload: TaskIn, conn: sqlite3.Connection = Depends(get_db)):
     )
     _store_checklist(conn, cursor.lastrowid, result.checklist)
     return load_task(conn, cursor.lastrowid)
+
+
+class AssignmentIn(BaseModel):
+    worker_id: int
+
+
+@router.get('')
+def list_tasks(worker_id: int | None = None, conn: sqlite3.Connection = Depends(get_db)):
+    query = 'SELECT id FROM tasks'
+    params = ()
+    if worker_id is not None:
+        query += ' WHERE worker_id = ?'
+        params = (worker_id,)
+    return [load_task(conn, row['id']) for row in conn.execute(query + ' ORDER BY id DESC', params)]
+
+
+@router.get('/workers')
+def list_workers(conn: sqlite3.Connection = Depends(get_db)):
+    return [dict(row) for row in conn.execute('SELECT id, name, team FROM workers WHERE is_foreman = 0 ORDER BY name, id')]
+
+
+@router.patch('/{task_id}/assignment', response_model=TaskOut)
+def assign_worker(task_id: int, payload: AssignmentIn, conn: sqlite3.Connection = Depends(get_db)):
+    load_task(conn, task_id)
+    worker = conn.execute('SELECT id FROM workers WHERE id = ? AND is_foreman = 0 AND site_id = (SELECT site_id FROM tasks WHERE id = ?)', (payload.worker_id, task_id)).fetchone()
+    if worker is None:
+        raise HTTPException(status_code=422, detail='현장에 등록된 작업자를 선택해 주세요.')
+    conn.execute('UPDATE tasks SET worker_id = ? WHERE id = ?', (payload.worker_id, task_id))
+    return load_task(conn, task_id)
 
 
 @router.get('/review-queue')

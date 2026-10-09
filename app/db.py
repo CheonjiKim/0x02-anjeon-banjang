@@ -129,6 +129,18 @@ CREATE TABLE IF NOT EXISTS incidents (
     follow_up_done INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
+CREATE TABLE IF NOT EXISTS jsas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL REFERENCES tasks(id),
+    title TEXT NOT NULL,
+    work_summary TEXT NOT NULL,
+    worker_inputs TEXT NOT NULL,
+    hazards TEXT NOT NULL,
+    measures TEXT NOT NULL,
+    photo_summary TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+);
 """
 
 
