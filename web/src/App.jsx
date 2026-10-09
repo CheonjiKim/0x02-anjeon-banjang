@@ -80,6 +80,7 @@ export default function App() {
         <Route path="/worker/calendar" element={<RequireSession user={user} role="worker"><Calendar worker /></RequireSession>} />
         <Route path="/worker/photos" element={<RequireSession user={user} role="worker"><WorkerReports /></RequireSession>} />
         <Route path="/checklist" element={<RequireSession user={user} role="admin"><Checklist /></RequireSession>} />
+        <Route path="/checklist/:taskId" element={<RequireSession user={user} role="admin"><Checklist /></RequireSession>} />
         <Route path="/todo" element={<RequireSession user={user} role="admin"><Todo /></RequireSession>} />
         <Route path="/evidence" element={<RequireSession user={user} role="admin"><Evidence /></RequireSession>} />
         <Route path="/ranking" element={<RequireSession user={user} role="admin"><Ranking /></RequireSession>} />

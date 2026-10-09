@@ -37,6 +37,7 @@ PHOTO_HINTS = {
     'cutting-ppe': '보안경과 청력 보호구를 착용한 작업자',
     'power-tool-electric': '손상 없는 전선과 누전 차단 장치',
     'cutting-fire': '절단 불티 주변의 소화기와 방화 조치',
+    'cutting-bystander': '파편이 향하지 않는 방향과 주변 작업자 통제 상태',
     'paint-ventilation': '환풍기·송풍기 또는 열린 개구부. 설비가 있다는 사실만으로 가동·풍량을 확정하지 않는다. 정지 사진에서 가동을 확인할 수 없으면 판단불가이며 관리자에게 실제 가동·풍량 확인을 요청한다. 같은 사진의 반복 촬영으로 가동을 입증하라고 요구하지 않는다',
     'confined-space': '밀폐 공간 출입 관리와 환기 장치',
     'paint-respirator': '유기용제용 방독마스크를 착용한 작업자',
@@ -62,7 +63,7 @@ _WORK_ITEMS = {
     '절단·원형톱': [
         ('saw-guard', '원형톱 안전 덮개 확인'), ('saw-kickback', '절단물 고정 및 반발 방지'),
         ('cutting-ppe', '보안경·청력 보호구 착용'), ('power-tool-electric', '전동공구 전선·누전 차단 확인'),
-        ('cutting-fire', '절단 불티 화재 예방'),
+        ('cutting-fire', '절단 불티 화재 예방'), ('cutting-bystander', '파편 비산 방향·주변 인원 통제'),
     ],
     '도장·방수': [
         ('paint-ventilation', '환풍기 또는 자연환기 확보'), ('confined-space', '밀폐 공간 작업 관리'),
@@ -70,9 +71,9 @@ _WORK_ITEMS = {
         ('msds-posting', '도료·방수재 MSDS 비치'), ('flammable-containers', '인화성 용기 밀폐 보관'),
     ],
     '사다리·말비계': [
-        ('fall-height-check', '작업 높이·추락 방지 확인'), ('ladder-use', '사다리 설치·사용 상태 확인'),
+        ('fall-height-check', '작업 높이·추락 방지 확인'), ('ladder-use', '사다리 최상단 작업 금지·설치 상태 확인'),
         ('horse-scaffold', '말비계 지주 하단·바닥 상태 확인'), ('helmet-chinstrap', '안전모·턱끈 착용'),
-        ('ladder-buddy', '사다리 보조 작업자 배치'), ('scaffold-clear-deck', '작업 발판 정리 상태 확인'),
+        ('ladder-buddy', '아웃트리거 설치 또는 사다리 지지자 배치'), ('scaffold-clear-deck', '작업 발판 정리 상태 확인'),
     ],
 }
 
@@ -119,6 +120,8 @@ def _required(code: str, c: Conditions, *, force: bool) -> bool:
         return c.ventilation != '양호' and c.place != '지하 주차장'
     if code in {'fall-height-check', 'ladder-buddy'}:
         return _is_high_or_unknown(c.height)
+    if code == 'cutting-bystander':
+        return c.nearby_people != '없음'
     return True
 
 
