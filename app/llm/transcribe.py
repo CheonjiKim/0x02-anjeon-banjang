@@ -12,13 +12,17 @@ API_URL = 'https://api.openai.com/v1/audio/transcriptions'
 
 def transcribe_audio(filename: str, content: bytes, content_type: str | None = None, *, http: httpx.Client | None = None) -> str:
     api_key = os.environ.get('OPENAI_API_KEY', '').strip()
-    model = os.environ.get('BANJANG_TRANSCRIPTION_MODEL', 'gpt-4o-mini-transcribe').strip()
+    model = os.environ.get('BANJANG_TRANSCRIPTION_MODEL', 'gpt-transcribe').strip()
     if not api_key:
         raise LLMError('OPENAI_API_KEY 설정이 필요합니다.')
     if not model:
         raise LLMError('BANJANG_TRANSCRIPTION_MODEL 설정이 필요합니다.')
     files = {'file': (filename or 'recording.webm', content, content_type or 'audio/webm')}
-    data = {'model': model, 'response_format': 'json', 'language': 'ko'}
+    data = {'model': model, 'response_format': 'json'}
+    if model == 'gpt-transcribe':
+        data['languages[]'] = 'ko'
+    else:
+        data['language'] = 'ko'
     headers = {'Authorization': f'Bearer {api_key}'}
     try:
         if http is not None:

@@ -32,7 +32,7 @@ uv sync
 백엔드 서버를 먼저 실행합니다.
 
 ```bash
-uv run uvicorn app.main:app --reload --port 8000
+uv run uvicorn app.main:app --reload --port 8000 --env-file .env
 ```
 
 별도 터미널에서 웹 개발 서버를 실행합니다.
