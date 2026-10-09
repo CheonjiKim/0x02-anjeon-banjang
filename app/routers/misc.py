@@ -71,12 +71,12 @@ def evidence_review_queue(conn: sqlite3.Connection = Depends(get_db)):
 
 @router.get('/scores', response_model=ScoresOut)
 def scores(site_id: int = 1, worker_id: int = 1, conn: sqlite3.Connection = Depends(get_db)):
-    rows = conn.execute('SELECT * FROM score_events WHERE site_id = ? ORDER BY id DESC', (site_id,)).fetchall()
+    rows = conn.execute('SELECT * FROM score_events WHERE site_id = ? AND worker_id = ? ORDER BY id DESC', (site_id, worker_id)).fetchall()
     events = [dict(row) for row in rows]
-    return ScoresOut(total=sum(row['points'] for row in rows), events=events, streaks=streaks(conn, site_id),
+    return ScoresOut(total=sum(row['points'] for row in rows), events=events, streaks=streaks(conn, site_id, worker_id=worker_id),
                      team_ranking=team_ranking(conn, site_id, team_of(conn, worker_id)),
                      worker_ranking=worker_ranking(conn, site_id, worker_id),
-                     stamps=stamps_for(conn, worker_id, site_id), history=history(conn, site_id))
+                     stamps=stamps_for(conn, worker_id, site_id), history=history(conn, site_id, worker_id=worker_id))
 
 
 @router.post('/reports', status_code=status.HTTP_201_CREATED)
@@ -159,7 +159,10 @@ def worker_form(payload: WorkerFormIn, conn: sqlite3.Connection = Depends(get_db
     if not task.close_requested:
         raise HTTPException(status_code=409, detail='이 작업은 마감 보고를 요청하지 않았습니다.')
     cursor = conn.execute('INSERT INTO worker_forms(task_id, understood, risk_note, ppe_worn, report_text, worker_id) VALUES (?, ?, ?, ?, ?, ?)',
-                          (payload.task_id, payload.understood, payload.risk_note, payload.ppe_worn, payload.report_text, payload.worker_id))
+                          # Legacy NOT NULL integer columns use -1 for unanswered,
+                          # 0 for an explicit no, and 1 for an explicit yes.
+                          (payload.task_id, -1 if payload.understood is None else int(payload.understood), payload.risk_note,
+                           -1 if payload.ppe_worn is None else int(payload.ppe_worn), payload.report_text, payload.worker_id))
     return {'id': cursor.lastrowid}
 
 
@@ -204,7 +207,7 @@ def review_closeout_photo(form_id: int, item_code: str = Form(...), conn: sqlite
     cursor = conn.execute('INSERT INTO evidence_photos(task_id, item_code, path, result, observed, retake_hint, run_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
                           (task.id, item_code, row['photo_path'], result.judgement.result, result.judgement.observed, result.judgement.retake_hint, result.run_id))
     task_row = conn.execute('SELECT site_id, worker_id FROM tasks WHERE id = ?', (task.id,)).fetchone()
-    points = award_evidence(conn, site_id=task_row['site_id'], task_id=task.id, item_code=item_code, result=result.judgement.result, worker_id=task_row['worker_id'] or 1)
+    points = award_evidence(conn, site_id=task_row['site_id'], task_id=task.id, item_code=item_code, result=result.judgement.result, worker_id=row['worker_id'] or task_row['worker_id'] or 1)
     return EvidenceOut(id=cursor.lastrowid, task_id=task.id, item_code=item_code, points=points, run_id=result.run_id,
                        first_result=result.first.result, verified=result.verified, **result.judgement.model_dump())
 
@@ -221,5 +224,7 @@ def tbm_suggestions(task_id: int | None = None, conn: sqlite3.Connection = Depen
 def _worker_form_out(conn: sqlite3.Connection, form_id: int) -> WorkerFormOut:
     row = conn.execute('SELECT f.*, w.name AS worker_name FROM worker_forms f LEFT JOIN workers w ON w.id = f.worker_id WHERE f.id = ?', (form_id,)).fetchone()
     return WorkerFormOut(id=row['id'], task_id=row['task_id'], report_text=row['report_text'] or '', risk_note=row['risk_note'] or '',
+                         understood=None if row['understood'] == -1 else bool(row['understood']),
+                         ppe_worn=None if row['ppe_worn'] == -1 else bool(row['ppe_worn']),
                          photo_url=f"/api/uploads/{Path(row['photo_path']).name}" if row['photo_path'] else None,
                          created_at=row['created_at'], worker_id=row['worker_id'], worker_name=row['worker_name'])

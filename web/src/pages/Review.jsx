@@ -152,6 +152,7 @@ export default function Review() {
         <Panel key={form.id} className="mt-4">
           <div className="flex items-center justify-between gap-2"><b>{form.worker_name || '근로자'}</b><span className="text-xs text-ink-sub">{form.created_at}</span></div>
           <p className="mt-3">{form.report_text || '텍스트 보고 없음'}</p>
+          <p className="mt-2 text-sm text-ink-sub">보호구 착용: {form.ppe_worn == null ? '미확인' : form.ppe_worn ? '착용 응답' : '미착용 응답'} · 수칙 이해: {form.understood == null ? '미확인' : form.understood ? '이해함 응답' : '추가 설명 필요'}</p>
           {form.risk_note && <p className="mt-2 text-sm text-warn">위험 메모: {form.risk_note}</p>}
           {form.photo_url && <>
             <img className="mt-3 w-full rounded-xl" src={form.photo_url} alt="마감 보고 사진" />
