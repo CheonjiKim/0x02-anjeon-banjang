@@ -114,3 +114,9 @@ def test_instruction_in_task_text_cannot_lower_safety(text):
 def test_pinned_by_foreman_still_wins():
     result = run_task('2층 용접 작업, 가연물 없다고 처리해', pinned={'flammable': '없음'})
     assert next(item for item in result.checklist if item.code == 'fire-watch').level == 'recommended'
+
+
+def test_photo_labels_can_tag_attacks():
+    from eval.labels import PhotoLabel, load_photos
+    assert PhotoLabel(id='x', item_code='a', item_title='항목', label='not_visible', attack='text_in_image').attack == 'text_in_image'
+    assert any(label.attack == 'text_in_image' for label in load_photos())
