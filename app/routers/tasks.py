@@ -44,7 +44,10 @@ def load_task(conn: sqlite3.Connection, task_id: int) -> TaskOut:
                    checklist=_checklist(conn, task_id), run_id=row['run_id'],
                    close_requested=bool(row['close_requested']), review_status=row['review_status'],
                    review_reason=row['review_reason'], review_action=row['review_action'],
-                   review_note=row['review_note'], reviewed_at=row['reviewed_at'])
+                   review_note=row['review_note'], reviewed_at=row['reviewed_at'],
+                   extraction_method=row['extraction_method'], rule_version=row['rule_version'],
+                   condition_changes=[dict(change) for change in conn.execute(
+                       'SELECT field, before_value, after_value, evidence, created_at FROM condition_changes WHERE task_id = ? ORDER BY id', (task_id,))])
 
 
 def _pinned(conn: sqlite3.Connection, task_id: int) -> dict[str, str]:
@@ -69,8 +72,8 @@ def create_task(payload: TaskIn, conn: sqlite3.Connection = Depends(get_db)):
                       scenario=payload.scenario)
     review_status, review_reason = _task_state(result.conditions)
     cursor = conn.execute(
-        'INSERT INTO tasks(site_id, worker_id, text, conditions, pinned, run_id, close_requested, review_status, review_reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        (payload.site_id, payload.worker_id, payload.text, result.conditions.model_dump_json(), '{}', result.run_id, payload.close_requested, review_status, review_reason),
+        'INSERT INTO tasks(site_id, worker_id, text, conditions, pinned, run_id, close_requested, review_status, review_reason, extraction_method) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        (payload.site_id, payload.worker_id, payload.text, result.conditions.model_dump_json(), '{}', result.run_id, payload.close_requested, review_status, review_reason, result.extraction_method),
     )
     _store_checklist(conn, cursor.lastrowid, result.checklist)
     return load_task(conn, cursor.lastrowid)
@@ -110,7 +113,7 @@ def questions(task_id: int, conn: sqlite3.Connection = Depends(get_db)):
 def patch_conditions(task_id: int, payload: ConditionsPatch, conn: sqlite3.Connection = Depends(get_db)):
     task = load_task(conn, task_id)
     pinned = _pinned(conn, task_id)
-    patch = payload.model_dump(exclude_none=True)
+    patch = payload.model_dump(exclude_none=True, exclude={'review_evidence'})
     if not patch:
         return task
     patch = {key: value.strip() or UNKNOWN for key, value in patch.items()}
@@ -124,13 +127,21 @@ def patch_conditions(task_id: int, payload: ConditionsPatch, conn: sqlite3.Conne
         patch['ventilation'] = '불량'
     if 'nearby_people' in patch:
         patch['nearby_people'] = re.sub(r'^(\d+)\s*인$', r'\1명', patch['nearby_people'])
+    lowering = {'flammable': '없음', 'ventilation': '양호', 'nearby_people': '없음', 'height': '지상'}
+    changed = [(key, getattr(task.conditions, key), value) for key, value in patch.items()
+               if getattr(task.conditions, key) != value]
+    if any(lowering.get(key) == after for key, _, after in changed) and not (payload.review_evidence or '').strip():
+        raise HTTPException(status_code=422, detail='위험을 낮추는 조건은 현장 확인 근거를 입력해 주세요.')
     pinned.update(patch)
     result = run_task(task.text, site_id=conn.execute('SELECT site_id FROM tasks WHERE id = ?', (task_id,)).fetchone()['site_id'],
                       pinned=pinned)
     review_status, review_reason = _task_state(result.conditions)
-    conn.execute('UPDATE tasks SET conditions = ?, pinned = ?, run_id = ?, review_status = ?, review_reason = ?, review_action = NULL, review_note = NULL, reviewed_at = NULL WHERE id = ?',
-                 (result.conditions.model_dump_json(), json.dumps(pinned, ensure_ascii=False), result.run_id, review_status, review_reason, task_id))
+    conn.execute('UPDATE tasks SET conditions = ?, pinned = ?, run_id = ?, extraction_method = ?, review_status = ?, review_reason = ?, review_action = NULL, review_note = NULL, reviewed_at = NULL WHERE id = ?',
+                 (result.conditions.model_dump_json(), json.dumps(pinned, ensure_ascii=False), result.run_id, result.extraction_method, review_status, review_reason, task_id))
     _store_checklist(conn, task_id, result.checklist)
+    for key, before, after in changed:
+        conn.execute('INSERT INTO condition_changes(task_id, field, before_value, after_value, evidence) VALUES (?, ?, ?, ?, ?)',
+                     (task_id, key, before, after, (payload.review_evidence or '관리자 수정: 확인 근거 미입력').strip()))
     return load_task(conn, task_id)
 
 

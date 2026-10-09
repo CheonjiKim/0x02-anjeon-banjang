@@ -10,7 +10,8 @@ from app.tracing import trace_run
 
 CONDITION_QUESTIONS = {
     'work': '어떤 작업인가요? (예: 용접·용단, 절단·원형톱, 도장·방수, 사다리·말비계)',
-    'height': '작업 높이는 어떻게 되나요? (예: 2층, 지상)',
+    'height': '발판에서 실제 작업 높이는 몇 m인가요? 층수와 구분해 확인해 주세요.',
+    'floor': '몇 층에서 작업하나요? (층수만으로 작업 높이·실내외를 판단하지 않습니다)',
     'flammable': '주변에 불에 타는 물건이 있나요? (예: 합판, 없음)',
     'ventilation': '환기는 되나요? (예: 양호, 밀폐)',
     'nearby_people': '주변에 다른 작업자가 있나요? (예: 2명, 없음)',
@@ -18,7 +19,8 @@ CONDITION_QUESTIONS = {
 }
 QUESTION_OPTIONS = {
     'work': ['용접·용단', '절단·원형톱', '도장·방수', '사다리·말비계'],
-    'height': ['지상', '2층', '3층'],
+    'height': ['지상', '2m', '3m'],
+    'floor': ['1층', '2층', '3층'],
     'flammable': ['합판', '스티로폼', '없음'],
     'ventilation': ['양호', '불량'],
     'nearby_people': ['있음', '없음'],
@@ -31,10 +33,12 @@ def run_task(text: str, *, site_id: int = 1, worker_id: int = 1,
     """추출부터 위험성평가까지 한 번씩만 실행한다."""
     with trace_run('task', text=text, site_id=site_id, worker_id=worker_id) as trace:
         with trace.step('extract', text=text) as step:
+            extraction_method = 'keyword_fallback'
             try:
                 client = MockClient(scenario=scenario) if scenario else get_client()
                 step.meta['llm'] = client.name
                 raw = client.extract(text, step=step)
+                extraction_method = client.name
             except LLMError as exc:
                 step.meta['failure'] = str(exc)
                 conditions, evidence = extract_with_spans(text)
@@ -67,5 +71,5 @@ def run_task(text: str, *, site_id: int = 1, worker_id: int = 1,
         with trace.step('risk', conditions=conditions) as step:
             risks = build_risk_assessment(conditions)
             step.output = [item.model_dump() for item in risks]
-    return TaskResult(run_id=trace.run_id, conditions=conditions, questions=questions,
+    return TaskResult(run_id=trace.run_id, conditions=conditions, extraction_method=extraction_method, questions=questions,
                       assumed_required=unknown, checklist=checklist, risks=risks)

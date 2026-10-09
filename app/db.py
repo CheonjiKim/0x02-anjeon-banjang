@@ -45,6 +45,15 @@ CREATE TABLE IF NOT EXISTS tasks (
     reviewed_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
+CREATE TABLE IF NOT EXISTS condition_changes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL REFERENCES tasks(id),
+    field TEXT NOT NULL,
+    before_value TEXT NOT NULL,
+    after_value TEXT NOT NULL,
+    evidence TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+);
 CREATE TABLE IF NOT EXISTS checklist_items (
     id INTEGER PRIMARY KEY,
     task_id INTEGER NOT NULL REFERENCES tasks(id),
@@ -136,6 +145,8 @@ def init_db(path: str | Path) -> None:
         _add_column(conn, 'tasks', 'review_action TEXT')
         _add_column(conn, 'tasks', 'review_note TEXT')
         _add_column(conn, 'tasks', 'reviewed_at TEXT')
+        _add_column(conn, 'tasks', "extraction_method TEXT NOT NULL DEFAULT 'unknown'")
+        _add_column(conn, 'tasks', "rule_version TEXT NOT NULL DEFAULT '1'")
         _add_column(conn, 'tbm_logs', "transcript TEXT NOT NULL DEFAULT ''")
         _add_column(conn, 'worker_forms', "report_text TEXT NOT NULL DEFAULT ''")
         _add_column(conn, 'worker_forms', 'photo_path TEXT')

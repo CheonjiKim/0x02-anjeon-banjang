@@ -30,7 +30,7 @@ def test_demo_task_flammable_makes_fire_watch_required(client):
 
 def test_removing_flammable_downgrades_fire_watch(client):
     task = make_task(client)
-    response = client.patch(f"/api/tasks/{task['id']}/conditions", json={'flammable': '없음'})
+    response = client.patch(f"/api/tasks/{task['id']}/conditions", json={'flammable': '없음', 'review_evidence': '현장에서 가연물 주변을 직접 확인'})
     assert response.status_code == 200
     assert next(item for item in response.json()['checklist'] if item['code'] == 'fire-watch')['level'] == 'recommended'
 
@@ -82,7 +82,7 @@ def test_questions_and_404(client):
     assert client.get('/api/tasks/999').status_code == 404
     task = make_task(client)
     questions = client.get(f"/api/tasks/{task['id']}/questions").json()
-    assert {question['key'] for question in questions} == {'ventilation', 'nearby_people', 'place'}
+    assert {question['key'] for question in questions} == {'height', 'ventilation', 'nearby_people', 'place'}
 
 
 def test_confirmed_evidence_scores_once_per_item(client):
@@ -155,7 +155,7 @@ def test_task_extraction_failure_stays_pending_until_conditions_fixed(client):
     }).status_code == 409
     response = client.patch(f"/api/tasks/{task['id']}/conditions", json={
         'work': '용접·용단', 'height': '2층', 'flammable': '합판', 'ventilation': '양호',
-        'nearby_people': '없음', 'place': '실내',
+        'nearby_people': '없음', 'place': '실내', 'review_evidence': '관리자가 현장 주변과 환기 상태를 확인',
     })
     assert response.json()['review_status'] == 'ready'
     assert next(item for item in response.json()['checklist'] if item['code'] == 'fire-watch')['level'] == 'required'
