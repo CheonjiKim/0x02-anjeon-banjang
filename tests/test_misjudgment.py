@@ -30,12 +30,12 @@ def test_values_outside_allowlist_become_unknown():
     conditions = Conditions(work='배관', height='높음', flammable='나무', ventilation='좋음', nearby_people='많음', place='어딘가')
     got, dropped = normalize(conditions, {}, '작업')
     assert all(value == UNKNOWN for value in got.model_dump().values())
-    assert set(dropped) == set(Conditions.model_fields)
+    assert set(dropped) == set(Conditions.model_fields) - {'floor'}
 
 
 def test_allowed_values_pass():
-    conditions = Conditions(work='용접·용단', height='2층', flammable='합판', ventilation='불량', nearby_people='2명', place='지하 주차장')
-    got, dropped = normalize(conditions, {}, '지하 주차장 2층 용접 옆에 합판, 환기 불량, 2명')
+    conditions = Conditions(work='용접·용단', height='2m', floor='2층', flammable='합판', ventilation='불량', nearby_people='2명', place='지하 주차장')
+    got, dropped = normalize(conditions, {}, '지하 주차장 2층 2m 높이 용접 옆에 합판, 환기 불량, 2명')
     assert got == conditions and dropped == {}
 
 

@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
   "bindings": {
-    "welding": {"V1": "fire-watch", "V2": "spark-cover", "V3": "extinguisher", "V4": "ventilation", "V6": "hot-work-posting"},
+    "welding": {"V1": "fire-watch", "V2": "spark-cover", "V3": "extinguisher", "V4": "ventilation", "V5": "post-work-fire-check", "V6": "hot-work-posting"},
     "circular_saw": {"C5": "cutting-fire"},
     "painting_waterproofing": {"P1": "paint-ventilation", "P7": "flammable-containers"},
     "ladder_horse_scaffold": {"L2": "ladder-use", "L3": "horse-scaffold", "L6": "scaffold-clear-deck"}

@@ -21,11 +21,19 @@ def normalize(c: Conditions, evidence: dict[str, str], text: str) -> tuple[Condi
     values = {}
     dropped = {}
     instruction = looks_like_instruction(text)
+    if re.fullmatch(r'\d+층', c.height):
+        # 층수는 작업 층일 뿐 발판에서의 실제 높이가 아니다.
+        if c.floor == UNKNOWN and c.height in text:
+            c = c.model_copy(update={'floor': c.height, 'height': UNKNOWN})
+        else:
+            c = c.model_copy(update={'height': UNKNOWN})
+        dropped['height'] = '층수만으로 작업 높이를 판단하지 않음'
     for key, original in c.model_dump().items():
         value = original.strip() or UNKNOWN
         allowed = {
             'work': value in WORKS,
             'height': re.fullmatch(r'\d+층|\d+m|지상|옥상', value) is not None,
+            'floor': re.fullmatch(r'\d+층', value) is not None,
             'flammable': value in FLAMMABLES,
             'ventilation': value in {'양호', '불량'},
             'nearby_people': re.fullmatch(r'\d+명|있음|없음', value) is not None,
@@ -42,5 +50,12 @@ def normalize(c: Conditions, evidence: dict[str, str], text: str) -> tuple[Condi
             elif not span or span not in text:
                 dropped[key] = f"안전을 낮추는 값 '{value}'의 원문 근거가 없음"
                 value = UNKNOWN
+            else:
+                # 원문에 같은 단어가 있어도 다른 조건의 부정 표현이면 근거가 아니다.
+                from app.pipeline.extract import extract_with_spans
+                extracted, spans = extract_with_spans(text)
+                if getattr(extracted, key) != value or spans.get(key) != span:
+                    dropped[key] = f"안전을 낮추는 값 '{value}'의 문맥 근거가 없음"
+                    value = UNKNOWN
         values[key] = value
     return Conditions(**values), dropped
