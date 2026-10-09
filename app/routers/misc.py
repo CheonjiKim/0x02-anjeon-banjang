@@ -204,8 +204,8 @@ def review_closeout_photo(form_id: int, item_code: str = Form(...), conn: sqlite
     from scoring import award_evidence
     content = Path(row['photo_path']).read_bytes()
     result = run_evidence(item, content, task_id=task.id)
-    cursor = conn.execute('INSERT INTO evidence_photos(task_id, item_code, path, result, observed, retake_hint, run_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                          (task.id, item_code, row['photo_path'], result.judgement.result, result.judgement.observed, result.judgement.retake_hint, result.run_id))
+    cursor = conn.execute('INSERT INTO evidence_photos(task_id, item_code, path, result, observed, retake_hint, run_id, worker_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                          (task.id, item_code, row['photo_path'], result.judgement.result, result.judgement.observed, result.judgement.retake_hint, result.run_id, row['worker_id']))
     task_row = conn.execute('SELECT site_id, worker_id FROM tasks WHERE id = ?', (task.id,)).fetchone()
     points = award_evidence(conn, site_id=task_row['site_id'], task_id=task.id, item_code=item_code, result=result.judgement.result, worker_id=row['worker_id'] or task_row['worker_id'] or 1)
     return EvidenceOut(mode=result.mode, id=cursor.lastrowid, task_id=task.id, item_code=item_code, points=points, run_id=result.run_id,

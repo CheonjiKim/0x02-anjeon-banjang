@@ -219,6 +219,21 @@ def test_personal_scores_history_and_streak_do_not_include_other_workers(client)
     assert client.get('/api/scores').json()['total'] == 5
 
 
+def test_manager_confirmation_keeps_evidence_worker_ownership(client):
+    task = make_task(client)
+    response = client.post('/api/evidence', data={
+        'task_id': str(task['id']), 'item_code': 'extinguisher', 'worker_id': '2',
+        'forced_result': 'uncertain',
+    }, files={'photo': ('a.jpg', b'fake', 'image/jpeg')})
+    assert response.status_code == 201
+    reviewed = client.post(f"/api/evidence/{response.json()['id']}/reviews", json={
+        'action': 'confirmed_by_manager', 'reason': '작업자 제출 사진과 현장 조치를 확인했습니다.',
+    })
+    assert reviewed.status_code == 201
+    assert client.get('/api/scores', params={'worker_id': 2}).json()['total'] == 10
+    assert client.get('/api/scores', params={'worker_id': 1}).json()['total'] == 0
+
+
 @pytest.mark.parametrize('answer', [None, False, True])
 def test_closeout_preserves_unknown_no_and_yes_separately(client, answer):
     task = make_task(client)
