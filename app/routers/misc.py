@@ -6,6 +6,7 @@ from pathlib import Path
 import sqlite3
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from pydantic import BaseModel, Field
 
 from app.db import get_db, team_of
 from app.routers.tasks import _checklist, load_task
@@ -19,6 +20,12 @@ CONDITION_TODOS = {
     'work': '작업 종류 확인', 'height': '작업 높이 확인', 'flammable': '가연물 확인',
     'ventilation': '환기 확인', 'nearby_people': '주변 인원 확인', 'place': '작업 장소 확인',
 }
+
+
+class TrainingIn(BaseModel):
+    worker_id: int = 2
+    course: str = Field(min_length=1, max_length=120)
+    understood: bool
 
 
 @router.get('/todos', response_model=list[TodoOut])
@@ -87,8 +94,30 @@ def incident(payload: IncidentIn, conn: sqlite3.Connection = Depends(get_db)):
 
 
 @router.get('/incidents')
-def incidents(conn: sqlite3.Connection = Depends(get_db)):
-    return [dict(row) for row in conn.execute('SELECT * FROM incidents ORDER BY id DESC')]
+def incidents(worker_id: int | None = None, conn: sqlite3.Connection = Depends(get_db)):
+    query = 'SELECT * FROM incidents'
+    args = () if worker_id is None else (worker_id,)
+    if worker_id is not None:
+        query += ' WHERE worker_id = ?'
+    return [dict(row) for row in conn.execute(query + ' ORDER BY id DESC', args)]
+
+
+@router.post('/training-reports', status_code=status.HTTP_201_CREATED)
+def training_report(payload: TrainingIn, conn: sqlite3.Connection = Depends(get_db)):
+    cursor = conn.execute(
+        'INSERT INTO training_reports(worker_id, course, understood) VALUES (?, ?, ?)',
+        (payload.worker_id, payload.course.strip(), payload.understood),
+    )
+    return {'id': cursor.lastrowid}
+
+
+@router.get('/training-reports')
+def training_reports(worker_id: int | None = None, conn: sqlite3.Connection = Depends(get_db)):
+    query = 'SELECT t.*, w.name AS worker_name FROM training_reports t JOIN workers w ON w.id = t.worker_id'
+    args = () if worker_id is None else (worker_id,)
+    if worker_id is not None:
+        query += ' WHERE t.worker_id = ?'
+    return [dict(row) for row in conn.execute(query + ' ORDER BY t.id DESC', args)]
 
 
 @router.post('/incidents/{incident_id}/follow-up')
@@ -129,8 +158,8 @@ def worker_form(payload: WorkerFormIn, conn: sqlite3.Connection = Depends(get_db
     task = load_task(conn, payload.task_id)
     if not task.close_requested:
         raise HTTPException(status_code=409, detail='이 작업은 마감 보고를 요청하지 않았습니다.')
-    cursor = conn.execute('INSERT INTO worker_forms(task_id, understood, risk_note, ppe_worn, report_text) VALUES (?, ?, ?, ?, ?)',
-                          (payload.task_id, payload.understood, payload.risk_note, payload.ppe_worn, payload.report_text))
+    cursor = conn.execute('INSERT INTO worker_forms(task_id, understood, risk_note, ppe_worn, report_text, worker_id) VALUES (?, ?, ?, ?, ?, ?)',
+                          (payload.task_id, payload.understood, payload.risk_note, payload.ppe_worn, payload.report_text, payload.worker_id))
     return {'id': cursor.lastrowid}
 
 
@@ -190,7 +219,7 @@ def tbm_suggestions(task_id: int | None = None, conn: sqlite3.Connection = Depen
 
 
 def _worker_form_out(conn: sqlite3.Connection, form_id: int) -> WorkerFormOut:
-    row = conn.execute('SELECT * FROM worker_forms WHERE id = ?', (form_id,)).fetchone()
+    row = conn.execute('SELECT f.*, w.name AS worker_name FROM worker_forms f LEFT JOIN workers w ON w.id = f.worker_id WHERE f.id = ?', (form_id,)).fetchone()
     return WorkerFormOut(id=row['id'], task_id=row['task_id'], report_text=row['report_text'] or '', risk_note=row['risk_note'] or '',
                          photo_url=f"/api/uploads/{Path(row['photo_path']).name}" if row['photo_path'] else None,
-                         created_at=row['created_at'])
+                         created_at=row['created_at'], worker_id=row['worker_id'], worker_name=row['worker_name'])
