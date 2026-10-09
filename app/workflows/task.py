@@ -5,7 +5,7 @@ from app.pipeline.extract import extract_with_spans
 from app.pipeline.normalize import normalize
 from app.pipeline.risk import build_risk_assessment
 from app.pipeline.rules import build_checklist
-from app.schemas import Conditions, TaskResult
+from app.schemas import UNKNOWN, Conditions, TaskResult
 from app.tracing import trace_run
 
 CONDITION_QUESTIONS = {
@@ -24,6 +24,21 @@ QUESTION_OPTIONS = {
     'nearby_people': ['있음', '없음'],
     'place': ['실내', '외부', '지하'],
 }
+
+
+def fill_explicit_keyword_conditions(raw: ExtractOut, text: str) -> list[str]:
+    """LLM이 놓친 값만 작업 문장에 명시된 키워드로 보완한다."""
+    detected, evidence = extract_with_spans(text)
+    values = raw.conditions.model_dump()
+    filled = []
+    for key, value in detected.model_dump().items():
+        if values[key] == UNKNOWN and value != UNKNOWN:
+            values[key] = value
+            raw.evidence[key] = evidence[key]
+            filled.append(key)
+    if filled:
+        raw.conditions = Conditions(**values)
+    return filled
 
 
 def run_task(text: str, *, site_id: int = 1, worker_id: int = 1,
@@ -45,6 +60,9 @@ def run_task(text: str, *, site_id: int = 1, worker_id: int = 1,
                 conditions, evidence = extract_with_spans(text)
                 raw = ExtractOut(conditions=conditions, evidence=evidence)
                 step.meta['fallback'] = 'keyword'
+            keyword_fills = fill_explicit_keyword_conditions(raw, text)
+            if keyword_fills:
+                step.meta['keyword_fill'] = keyword_fills
             step.output = raw.model_dump()
         with trace.step('normalize', conditions=raw.conditions, evidence=raw.evidence) as step:
             conditions, dropped = normalize(raw.conditions, raw.evidence, text)

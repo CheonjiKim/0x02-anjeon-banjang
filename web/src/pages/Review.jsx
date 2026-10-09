@@ -8,6 +8,13 @@ const CONDITION_LABELS = {
 };
 const SUPPORTED_WORK = ['용접·용단', '절단·원형톱', '도장·방수', '사다리·말비계'];
 const UNSUPPORTED_WORK_MESSAGE = '현재는 지원하지 않는 작업 종류입니다. 추후 지원될 예정입니다.';
+const DEFAULT_REVIEW_VALUES = { flammable: '없음', nearby_people: '없음' };
+
+function withReviewDefaults(conditions) {
+  return Object.fromEntries(Object.entries(conditions).map(([key, value]) => [
+    key, value === '알 수 없음' && DEFAULT_REVIEW_VALUES[key] ? DEFAULT_REVIEW_VALUES[key] : value,
+  ]));
+}
 
 export default function Review() {
   const [forms, setForms] = useState([]);
@@ -15,6 +22,7 @@ export default function Review() {
   const [task, setTask] = useState(null);
   const [message, setMessage] = useState('');
   const [dirty, setDirty] = useState(false);
+  const [conditionsConfirmed, setConditionsConfirmed] = useState(false);
   const taskId = localStorage.getItem('banjang.taskId');
 
   async function load() {
@@ -24,8 +32,9 @@ export default function Review() {
     ]);
     setForms(savedForms);
     setItems(savedTask.checklist);
-    setTask(savedTask);
+    setTask({ ...savedTask, conditions: withReviewDefaults(savedTask.conditions) });
     setDirty(false);
+    setConditionsConfirmed(false);
   }
 
   useEffect(() => { load().catch(error => setMessage(error.message)); }, []);
@@ -33,9 +42,11 @@ export default function Review() {
   function updateCondition(key, value) {
     setTask(current => ({ ...current, conditions: { ...current.conditions, [key]: value } }));
     setDirty(true);
+    setConditionsConfirmed(false);
   }
 
   async function correctConditions() {
+    if (!conditionsConfirmed) return;
     const values = { ...task.conditions };
     const work = values.work.trim();
     values.work = { '용접': '용접·용단', '용단': '용접·용단' }[work] || work;
@@ -50,6 +61,7 @@ export default function Review() {
       setTask(updated);
       setItems(updated.checklist);
       setDirty(false);
+      setConditionsConfirmed(false);
       setMessage(updated.review_status === 'ready'
         ? '조건을 반영하고 체크리스트를 다시 생성했습니다. 검토 기록을 저장해 주세요.'
         : '조건을 저장했습니다. 미확인 필수 조건을 확인해 주세요.');
@@ -104,7 +116,11 @@ export default function Review() {
                 </label>
               ))}
             </div>
-            <AppButton className="mt-3 w-full" onClick={correctConditions}>조건 수정 후 체크리스트 재생성</AppButton>
+            <label className="mt-4 flex items-start gap-2 text-sm font-bold text-ink">
+              <input type="checkbox" checked={conditionsConfirmed} onChange={event => setConditionsConfirmed(event.target.checked)} className="mt-0.5 h-5 w-5" />
+              입력한 작업 조건을 전부 확인했습니다.
+            </label>
+            <AppButton className="mt-3 w-full" disabled={!conditionsConfirmed} onClick={correctConditions}>조건 수정 후 체크리스트 재생성</AppButton>
             <AppButton className="mt-2 w-full" disabled={task.review_status !== 'ready' || dirty} onClick={completeTaskReview}>검토 기록 저장</AppButton>
           </div>
         )}

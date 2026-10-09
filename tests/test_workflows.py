@@ -1,8 +1,10 @@
 import pytest
 
-from app.schemas import UNKNOWN, ChecklistItem
+from app.llm import ExtractOut
+from app.schemas import UNKNOWN, ChecklistItem, Conditions
 from app.tracing import read_traces
 from app.workflows import QUESTION_OPTIONS, run_evidence, run_task, run_tbm
+import app.workflows.task as task_workflow
 
 DEMO = '2층 각파이프 용접, 옆에 합판'
 FULL = '외부 지상에서 용접, 환기 양호, 가연물 없음, 혼자 작업'
@@ -95,6 +97,20 @@ def test_keyword_fallback_recognizes_welding_in_a_short_work_order(monkeypatch):
     assert set(result.conditions.unknown_keys()) == {
         'height', 'flammable', 'ventilation', 'nearby_people', 'place',
     }
+
+
+def test_explicit_wood_and_people_fill_conditions_missed_by_llm(monkeypatch):
+    class ClientThatMissesConditions:
+        name = 'test'
+
+        def extract(self, text, *, step=None):
+            return ExtractOut(conditions=Conditions(work='절단·원형톱', height='2층'), evidence={})
+
+    monkeypatch.setattr(task_workflow, 'get_client', lambda: ClientThatMissesConditions())
+    result = run_task('2층에서 원형톱 작업, 목재 있고 사람 있음')
+    assert result.conditions.flammable == '목재'
+    assert result.conditions.nearby_people == '있음'
+    assert read_traces()[-1]['steps'][0]['meta']['keyword_fill'] == ['flammable', 'nearby_people']
 
 
 def test_question_options_match_the_foreman_patch_contract():
