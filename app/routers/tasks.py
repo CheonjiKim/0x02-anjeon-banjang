@@ -1,6 +1,7 @@
 """작업 입력, 조건 보정, 체크리스트 API다."""
 
 import json
+import re
 import sqlite3
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -22,10 +23,11 @@ class TaskReviewIn(BaseModel):
 
 
 def _task_state(conditions: Conditions) -> tuple[str, str | None]:
-    # UNKNOWN work still produces the full conservative checklist; other unknown
-    # conditions leave safety-critical requirements unresolved for a manager.
-    unknown = [key for key in conditions.unknown_keys() if key != 'work']
-    return ('pending', '미확인 필수 조건: ' + ', '.join(unknown)) if unknown else ('ready', None)
+    # The work type selects the rule set. Missing other details remain unknown,
+    # so the rules keep conservative required items without blocking the flow.
+    if conditions.work == UNKNOWN:
+        return 'pending', '작업 종류를 확인해 주세요.'
+    return 'ready', None
 
 
 def _checklist(conn: sqlite3.Connection, task_id: int) -> list[ChecklistItem]:
@@ -111,12 +113,17 @@ def patch_conditions(task_id: int, payload: ConditionsPatch, conn: sqlite3.Conne
     patch = payload.model_dump(exclude_none=True)
     if not patch:
         return task
+    patch = {key: value.strip() or UNKNOWN for key, value in patch.items()}
     if 'work' in patch:
-        work = patch['work'].strip()
+        work = patch['work']
         work = {'용접': '용접·용단', '용단': '용접·용단'}.get(work, work)
         if work not in WORK_TYPES and work != UNKNOWN:
             raise HTTPException(status_code=422, detail='현재는 지원하지 않는 작업 종류입니다. 추후 지원될 예정입니다.')
         patch['work'] = work
+    if patch.get('ventilation') == '없음':
+        patch['ventilation'] = '불량'
+    if 'nearby_people' in patch:
+        patch['nearby_people'] = re.sub(r'^(\d+)\s*인$', r'\1명', patch['nearby_people'])
     pinned.update(patch)
     result = run_task(task.text, site_id=conn.execute('SELECT site_id FROM tasks WHERE id = ?', (task_id,)).fetchone()['site_id'],
                       pinned=pinned)
@@ -134,8 +141,8 @@ def review_task(task_id: int, payload: TaskReviewIn, conn: sqlite3.Connection = 
         raise HTTPException(status_code=409, detail='검토 대기 중인 작업이 아닙니다.')
     if payload.action not in {'conditions_corrected', 'cancelled'}:
         raise HTTPException(status_code=422, detail='지원하지 않는 관리자 조치입니다.')
-    if payload.action == 'conditions_corrected' and any(key != 'work' for key in task.conditions.unknown_keys()):
-        raise HTTPException(status_code=409, detail='먼저 원문 조건을 수정해 미확인 항목을 해결해 주세요.')
+    if payload.action == 'conditions_corrected' and task.conditions.work == UNKNOWN:
+        raise HTTPException(status_code=409, detail='먼저 작업 종류를 확인해 주세요.')
     conn.execute("UPDATE tasks SET review_action = ?, review_note = ?, reviewed_at = datetime('now','localtime'), review_status = ? WHERE id = ?",
                  (payload.action, payload.reason, 'cancelled' if payload.action == 'cancelled' else 'reviewed', task_id))
     return load_task(conn, task_id)
