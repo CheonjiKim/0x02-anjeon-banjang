@@ -11,6 +11,9 @@ import Ranking from './pages/Ranking.jsx';
 import Eval from './pages/Eval.jsx';
 import WorkerForm from './pages/WorkerForm.jsx';
 import LoginSample from './pages/LoginSample.jsx';
+import Tbm from './pages/Tbm.jsx';
+import Incidents from './pages/Incidents.jsx';
+import Review from './pages/Review.jsx';
 
 const tabs = [
   ['/', '작업', HardHat],
@@ -63,6 +66,9 @@ export default function App() {
         <Route path="/ranking" element={<Ranking />} />
         <Route path="/eval" element={<Eval />} />
         <Route path="/worker/:taskId" element={<WorkerForm />} />
+        <Route path="/tbm" element={<Tbm />} />
+        <Route path="/incidents" element={<Incidents />} />
+        <Route path="/reviews" element={<Review />} />
         <Route path="/login" element={<LoginSample onLogin={login} />} />
       </Routes>
       {!standalone && (

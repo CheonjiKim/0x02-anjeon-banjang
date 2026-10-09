@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.db import init_db
-from app.routers import auth, eval as eval_router, evidence, misc, tasks
+from app.routers import auth, eval as eval_router, evidence, misc, tasks, transcription
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +32,7 @@ def create_app(db_path: str | None = None, upload_dir: str | None = None) -> Fas
 
     app.include_router(tasks.router)
     app.include_router(evidence.router)
+    app.include_router(transcription.router)
     app.include_router(misc.router)
     app.include_router(auth.router)
     app.include_router(eval_router.router)

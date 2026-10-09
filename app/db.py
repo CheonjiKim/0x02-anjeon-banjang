@@ -115,6 +115,12 @@ def init_db(path: str | Path) -> None:
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with closing(connect(path)) as conn:
         conn.executescript(SCHEMA)
+        # Existing local demo databases predate these columns. SQLite has no
+        # portable ADD COLUMN IF NOT EXISTS, so inspect before each migration.
+        _add_column(conn, 'tasks', 'close_requested INTEGER NOT NULL DEFAULT 0')
+        _add_column(conn, 'tbm_logs', "transcript TEXT NOT NULL DEFAULT ''")
+        _add_column(conn, 'worker_forms', "report_text TEXT NOT NULL DEFAULT ''")
+        _add_column(conn, 'worker_forms', 'photo_path TEXT')
         if conn.execute('SELECT COUNT(*) FROM sites').fetchone()[0] == 0:
             conn.execute("INSERT INTO sites(id, name) VALUES (1, '기본 현장')")
             conn.executemany(
@@ -127,6 +133,13 @@ def init_db(path: str | Path) -> None:
                 [('admin', '1234', 'admin', '김반장', '우리 팀'), ('worker', '1234', 'worker', '김작업', '우리 팀')],
             )
         conn.commit()
+
+
+def _add_column(conn: sqlite3.Connection, table: str, definition: str) -> None:
+    column = definition.split()[0]
+    columns = {row['name'] for row in conn.execute(f'PRAGMA table_info({table})')}
+    if column not in columns:
+        conn.execute(f'ALTER TABLE {table} ADD COLUMN {definition}')
 
 
 def team_of(conn: sqlite3.Connection, worker_id: int | None) -> str | None:
