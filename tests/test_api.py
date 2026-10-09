@@ -204,6 +204,23 @@ def test_login_returns_role_for_seed_accounts(client):
     assert invalid.status_code == 401
 
 
+def test_worker_submission_is_attributed_for_manager_and_training_is_saved(client):
+    task = make_task(client)
+    form = client.post('/api/worker-forms', json={
+        'task_id': task['id'], 'understood': True, 'ppe_worn': True,
+        'report_text': '보호구를 착용하고 작업을 마쳤습니다.', 'worker_id': 2,
+    })
+    assert form.status_code == 201
+    submitted = client.get('/api/worker-forms').json()[0]
+    assert submitted['worker_id'] == 2
+    assert submitted['worker_name'] == '김OO'
+    training = client.post('/api/training-reports', json={
+        'worker_id': 2, 'course': '오늘 작업 전 안전교육', 'understood': True,
+    })
+    assert training.status_code == 201
+    assert client.get('/api/training-reports', params={'worker_id': 2}).json()[0]['worker_name'] == '김OO'
+
+
 def test_eval_latest_returns_newest_report(client, tmp_path, monkeypatch):
     from eval.run import main
 

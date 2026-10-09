@@ -210,6 +210,7 @@ class WorkerFormIn(BaseModel):
     risk_note: str = ''
     ppe_worn: bool
     report_text: str = ''
+    worker_id: int = 2
 
 
 class WorkerFormOut(BaseModel):
@@ -219,6 +220,8 @@ class WorkerFormOut(BaseModel):
     risk_note: str = ''
     photo_url: str | None = None
     created_at: str | None = None
+    worker_id: int | None = None
+    worker_name: str | None = None
 
 
 class TranscriptionOut(BaseModel):
