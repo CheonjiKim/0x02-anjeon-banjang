@@ -1,0 +1,97 @@
+{
+  "source": "docs/validation/live-ai-fixes/summary.json",
+  "sha256": "f609b4b53c955f7cc43eac82f78f775c1f77a1a1c5d8754f92a9884f8f3f3280",
+  "date": "2026-10-09",
+  "model": "gpt-4.1-mini",
+  "photo_labels": "unreviewed candidates; agreement is not validated accuracy",
+  "release": {
+    "phase": "release",
+    "rows": 98,
+    "successful_calls": 102,
+    "input_tokens": 340015,
+    "output_tokens": 8160,
+    "failures": [],
+    "task_checks_passed": 28,
+    "task_checks_total": 28,
+    "photos_confirmed": 8,
+    "candidate_false_approvals": [],
+    "candidate_agreements": 55,
+    "cost_uncached_upper_estimate": 0.149062,
+    "cost_and_latency": {
+      "n_runs": 98,
+      "latency_ms": {
+        "p50": 1747.62,
+        "p95": 3757.03,
+        "max": 4595.78
+      },
+      "cost_usd": {
+        "total": 0.1013692,
+        "per_run": 0.00103438,
+        "status": "estimated"
+      },
+      "per_step": {
+        "extract": {
+          "n": 10,
+          "latency_ms_p50": 1511.95,
+          "cost_usd": 0.0040604
+        },
+        "normalize": {
+          "n": 10,
+          "latency_ms_p50": 0.06,
+          "cost_usd": 0
+        },
+        "questions": {
+          "n": 10,
+          "latency_ms_p50": 0.01,
+          "cost_usd": 0
+        },
+        "rules": {
+          "n": 10,
+          "latency_ms_p50": 0.11,
+          "cost_usd": 0
+        },
+        "risk": {
+          "n": 10,
+          "latency_ms_p50": 0.02,
+          "cost_usd": 0
+        },
+        "judge": {
+          "n": 88,
+          "latency_ms_p50": 1733.08,
+          "cost_usd": 0.0798912
+        },
+        "decide": {
+          "n": 88,
+          "latency_ms_p50": 0.0,
+          "cost_usd": 0
+        },
+        "verify": {
+          "n": 11,
+          "latency_ms_p50": 1832.26,
+          "cost_usd": 0.0174176
+        }
+      },
+      "errors": 0
+    },
+    "flows": {
+      "task": {
+        "n": 10,
+        "cost_usd_per_run": 0.00040604,
+        "latency_ms_p50": 1515.61,
+        "latency_ms_p95": 2308.77,
+        "llm_calls_per_run": 1.0,
+        "llm_calls_max": 1
+      },
+      "evidence": {
+        "n": 88,
+        "cost_usd_per_run": 0.00110578,
+        "latency_ms_p50": 1797.22,
+        "latency_ms_p95": 3757.03,
+        "llm_calls_per_run": 1.12,
+        "llm_calls_max": 2
+      }
+    },
+    "quality_blocks": 7,
+    "cached_tokens": 158976
+  }
+}
