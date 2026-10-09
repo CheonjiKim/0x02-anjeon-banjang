@@ -40,16 +40,17 @@ async def create_evidence(
     scenario_alias = {'judge_timeout': 'judge_fail', 'judge_invalid': 'judge_fail', 'verify_empty': 'verify_reject'}
     scenario = scenario_alias.get(scenario, scenario)
     result = run_evidence(item, content, forced=forced_result, scenario=scenario or None, task_id=task_id)
-    cursor = conn.execute(
-        'INSERT INTO evidence_photos(task_id, item_code, path, result, observed, retake_hint, run_id) '
-        'VALUES (?, ?, ?, ?, ?, ?, ?)',
-        (task_id, item_code, str(path), result.judgement.result, result.judgement.observed,
-         result.judgement.retake_hint, result.run_id),
-    )
     row = conn.execute('SELECT site_id, worker_id FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    owner_id = worker_id or row['worker_id'] or 1
+    cursor = conn.execute(
+        'INSERT INTO evidence_photos(task_id, item_code, path, result, observed, retake_hint, run_id, worker_id) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        (task_id, item_code, str(path), result.judgement.result, result.judgement.observed,
+         result.judgement.retake_hint, result.run_id, owner_id),
+    )
     points = award_evidence(conn, site_id=row['site_id'], task_id=task_id, item_code=item_code,
-                            result=result.judgement.result, worker_id=worker_id or row['worker_id'] or 1)
-    return EvidenceOut(id=cursor.lastrowid, task_id=task_id, item_code=item_code, points=points,
+                            result=result.judgement.result, worker_id=owner_id)
+    return EvidenceOut(mode=result.mode, id=cursor.lastrowid, task_id=task_id, item_code=item_code, points=points,
                        run_id=result.run_id, first_result=result.first.result, verified=result.verified,
                        **result.judgement.model_dump())
 
@@ -79,7 +80,7 @@ def review_evidence(evidence_id: int, payload: EvidenceReviewIn, conn: sqlite3.C
     if payload.action == 'confirmed_by_manager':
         task = conn.execute('SELECT site_id, worker_id FROM tasks WHERE id = ?', (evidence['task_id'],)).fetchone()
         points = award_evidence(conn, site_id=task['site_id'], task_id=evidence['task_id'],
-                                item_code=evidence['item_code'], result='confirmed', worker_id=task['worker_id'] or 1)
+                                item_code=evidence['item_code'], result='confirmed', worker_id=evidence['worker_id'] or task['worker_id'] or 1)
         conn.execute('UPDATE evidence_photos SET result = \'confirmed\' WHERE id = ?', (evidence_id,))
     else:
         points = 0

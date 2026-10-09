@@ -102,6 +102,7 @@ class Judgement(BaseModel):
 
 
 class EvidenceOut(Judgement):
+    mode: str = 'unknown'
     id: int
     task_id: int
     item_code: str
@@ -263,6 +264,7 @@ class TaskResult(BaseModel):
 
 
 class EvidenceResult(BaseModel):
+    mode: str = 'unknown'
     run_id: str
     judgement: Judgement  # 최종 판정
     first: Judgement  # 1차 판정

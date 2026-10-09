@@ -105,6 +105,7 @@ def test_verify_rejection_becomes_uncertain_without_points(client):
     assert response.json()['points'] == 0
     assert response.json()['first_result'] == 'confirmed'
     assert response.json()['verified'] is False
+    assert response.json()['mode'] == 'mock'
     assert client.get('/api/scores').json()['total'] == 0
     task_status = client.get(f"/api/tasks/{task['id']}").json()['review_status']
     evidence_id = response.json()['id']
@@ -116,6 +117,22 @@ def test_verify_rejection_becomes_uncertain_without_points(client):
     assert client.get('/api/evidence/review-queue').json()[0]['id'] == evidence_id
     assert client.get('/api/scores').json()['total'] == 0
     assert client.get(f"/api/tasks/{task['id']}").json()['review_status'] == task_status
+
+
+def test_runtime_mode_honors_vision_override_without_calling_model(client, monkeypatch):
+    monkeypatch.setenv('BANJANG_LLM', 'openai')
+    assert client.get('/api/runtime').json() == {'vision_mode': 'mock'}
+    monkeypatch.setenv('BANJANG_VISION', 'openai')
+    assert client.get('/api/runtime').json() == {'vision_mode': 'openai'}
+    # A forced mock scenario must be labelled mock even with real mode configured.
+    monkeypatch.setenv('BANJANG_LLM', 'mock')
+    task = make_task(client)
+    response = client.post('/api/evidence', data={
+        'task_id': str(task['id']), 'item_code': 'extinguisher', 'scenario': 'judge_fail',
+    }, files={'photo': ('a.jpg', b'fake', 'image/jpeg')})
+    assert response.json()['mode'] == 'mock'
+    monkeypatch.setenv('BANJANG_VISION', 'bad-setting')
+    assert client.get('/api/runtime').json() == {'vision_mode': 'unavailable'}
 
 
 def test_photo_review_does_not_clear_pending_task_condition_review(client):
@@ -200,6 +217,21 @@ def test_personal_scores_history_and_streak_do_not_include_other_workers(client)
     assert next(s for s in own['streaks'] if s['kind'] == 'participation')['days'] == 1
     assert own['history'][-1]['recorded']
     assert client.get('/api/scores').json()['total'] == 5
+
+
+def test_manager_confirmation_keeps_evidence_worker_ownership(client):
+    task = make_task(client)
+    response = client.post('/api/evidence', data={
+        'task_id': str(task['id']), 'item_code': 'extinguisher', 'worker_id': '2',
+        'forced_result': 'uncertain',
+    }, files={'photo': ('a.jpg', b'fake', 'image/jpeg')})
+    assert response.status_code == 201
+    reviewed = client.post(f"/api/evidence/{response.json()['id']}/reviews", json={
+        'action': 'confirmed_by_manager', 'reason': '작업자 제출 사진과 현장 조치를 확인했습니다.',
+    })
+    assert reviewed.status_code == 201
+    assert client.get('/api/scores', params={'worker_id': 2}).json()['total'] == 10
+    assert client.get('/api/scores', params={'worker_id': 1}).json()['total'] == 0
 
 
 @pytest.mark.parametrize('answer', [None, False, True])
