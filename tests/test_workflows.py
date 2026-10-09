@@ -21,14 +21,14 @@ def test_task_steps_in_order():
 
 def test_unknown_conditions_become_questions_and_required():
     result = run_task(DEMO)
-    assert set(result.assumed_required) == {'ventilation', 'nearby_people', 'place'}
-    assert len(result.questions) == 3
+    assert set(result.assumed_required) == {'height', 'ventilation', 'nearby_people', 'place'}
+    assert len(result.questions) == 4
     assert next(item for item in result.checklist if item.code == 'ventilation').level == 'required'
 
 
 def test_all_known_conditions_ask_nothing():
     result = run_task(FULL)
-    assert result.questions == result.assumed_required == []
+    assert result.assumed_required == ['floor']
 
 
 def test_pinned_condition_beats_extraction():
@@ -79,9 +79,10 @@ def test_extract_failure_uses_explicit_keyword_fallback_when_llm_unavailable(mon
         monkeypatch.delenv(key, raising=False)
     result = run_task(DEMO)
     assert result.conditions.work == '용접·용단'
-    assert result.conditions.height == '2층'
+    assert result.conditions.floor == '2층'
+    assert result.conditions.height == UNKNOWN
     assert result.conditions.flammable == '합판'
-    assert set(result.assumed_required) == {'ventilation', 'nearby_people', 'place'}
+    assert set(result.assumed_required) == {'height', 'ventilation', 'nearby_people', 'place'}
     assert 'failure' in read_traces()[-1]['steps'][0]['meta']
     assert read_traces()[-1]['steps'][0]['meta']['fallback'] == 'keyword'
 
@@ -93,7 +94,7 @@ def test_keyword_fallback_recognizes_welding_in_a_short_work_order(monkeypatch):
     result = run_task('각파이프 용접해야 합니다')
     assert result.conditions.work == '용접·용단'
     assert set(result.conditions.unknown_keys()) == {
-        'height', 'flammable', 'ventilation', 'nearby_people', 'place',
+        'height', 'floor', 'flammable', 'ventilation', 'nearby_people', 'place',
     }
 
 

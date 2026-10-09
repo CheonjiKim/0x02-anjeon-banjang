@@ -28,6 +28,7 @@ export default function Todo() {
         </div>
         {todo.observed && <p className="mt-3 rounded-xl bg-review-soft p-3 text-sm text-review">AI 관찰: {todo.observed}</p>}
         {todo.photo_url && <img src={todo.photo_url} alt={`${todo.title} 증빙 사진`} className="mt-3 w-full rounded-xl" />}
+        {todo.kind === 'condition' && <AppButton outline className="mt-4 w-full" onClick={() => navigate('/reviews')}>현장 조건 확인·수정</AppButton>}
         {todo.kind !== 'condition' && <AppButton outline className="mt-4 w-full" onClick={() => navigate('/evidence')}>사진 검토로 이동</AppButton>}
       </Panel>)}
     </Screen>

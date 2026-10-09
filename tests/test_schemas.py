@@ -5,11 +5,11 @@ from app import schemas as s
 
 
 def test_conditions_contract():
-    keys = ['work', 'height', 'flammable', 'ventilation', 'nearby_people', 'place']
+    keys = ['work', 'height', 'floor', 'flammable', 'ventilation', 'nearby_people', 'place']
     assert list(s.Conditions.model_fields) == keys
     assert s.Conditions().model_dump() == dict.fromkeys(keys, '알 수 없음')
     assert s.Conditions(work='용접·용단').unknown_keys() == keys[1:]
-    assert s.ConditionsPatch().model_dump() == dict.fromkeys(keys)
+    assert s.ConditionsPatch().model_dump() == {**dict.fromkeys(keys), 'review_evidence': None}
     assert s.TaskIn(text='용접').model_dump() == {'text': '용접', 'site_id': 1, 'worker_id': 1}
 
 

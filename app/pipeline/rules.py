@@ -31,6 +31,7 @@ PHOTO_HINTS = {
     'extinguisher': '작업 지점 가까이 놓인 소화기',
     'spark-cover': '가연물을 덮은 방화포 또는 불티 비산 방지포',
     'hot-work-posting': '화기 작업 구역 표지와 출입 통제선',
+    'post-work-fire-check': '작업 종료 후 주변과 틈새의 잔불 확인',
     'saw-guard': '원형톱 날을 덮는 안전 덮개',
     'saw-kickback': '절단물을 고정한 상태와 반발 방지 조치',
     'cutting-ppe': '보안경과 청력 보호구를 착용한 작업자',
@@ -56,6 +57,7 @@ _WORK_ITEMS = {
         ('fire-watch', '화재감시자 배치'), ('spark-cover', '불티 비산 방지포 설치'),
         ('extinguisher', '소화기 비치'), ('ventilation', '환기 확인'),
         ('hot-work-posting', '화기 작업 구역 표지'),
+        ('post-work-fire-check', '작업 후 잔불 확인'),
     ],
     '절단·원형톱': [
         ('saw-guard', '원형톱 안전 덮개 확인'), ('saw-kickback', '절단물 고정 및 반발 방지'),
@@ -170,7 +172,9 @@ def _source_text(filename: str, rule: dict) -> str:
     articles = source.get('articles') or source.get('guideline') or []
     basis = ', '.join(articles)
     status = source.get('status', 'status 미기재')
-    return f'{filename} · {status}' + (f' · {basis}' if basis else '')
+    kind = {'legal': '법령 조항 참고', 'guideline': 'KOSHA 권고', 'legal+guideline': '법령·가이드 혼합'}.get(source.get('basis'), '근거 검토 중')
+    review = ' · 원문·적용요건 재확인 필요' if status == 'needs_check' else ' · 적용요건은 현장 확인'
+    return f'{kind} · {filename} · {status}' + (f' · {basis}' if basis else '') + review
 
 
 def _rule_for(work: str, code: str):
@@ -190,6 +194,8 @@ def _items_for(work: str, c: Conditions, *, force: bool, task_text: str = '') ->
             filename, rule = matched
             protections = rule.get('protections') or []
             level = _rule_level(rule, c, task_text, force=force)
+            if code == 'fire-watch':
+                protections = ['법정 배치는 제241조의2의 세 가지 장소 요건과 상시·반복 작업 예외를 별도 확인'] + protections
             out.append(ChecklistItem(code=code, title=title, source=_source_text(filename, rule), level=level,
                                      note=' · '.join(protections) if protections else None))
         else:
@@ -204,6 +210,14 @@ def build_checklist(c: Conditions, *, task_text: str = '') -> list[ChecklistItem
     force = c.work == UNKNOWN
     works = list(_WORK_ITEMS) if force else [c.work]
     checklist = [item for work in works for item in _items_for(work, c, force=force, task_text=task_text)]
+    if c.work in {'용접·용단', UNKNOWN} and c.height != '지상':
+        checklist.append(ChecklistItem(code='work-height-check', title='실제 작업 높이·추락 방지 조치 확인',
+            source=POC_SOURCE, level='required',
+            note='층수는 실제 발판 높이를 뜻하지 않습니다. 높이를 현장에서 확인해 주세요.'))
+    if c.work in {'용접·용단', UNKNOWN} and c.nearby_people != '없음':
+        checklist.append(ChecklistItem(code='bystander-control', title='주변 인원·하부 출입 통제 확인',
+            source=POC_SOURCE, level='required',
+            note='주변 인원과 불티·낙하물 노출 범위를 현장에서 확인'))
     welding_and_painting = bool(re.search(r'용접|용단', task_text)) and bool(re.search(r'도장|페인트|방수|우레탄', task_text))
     if welding_and_painting:
         if not force:
