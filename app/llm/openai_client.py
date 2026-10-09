@@ -16,7 +16,7 @@ API_URL = 'https://api.openai.com/v1/chat/completions'
 
 
 def prompt_dir() -> Path:
-    return Path(os.environ.get('BANJANG_PROMPTS', ROOT / 'prompts/v0'))
+    return Path(os.environ.get('BANJANG_PROMPTS', ROOT / 'prompts/v1'))
 
 
 def load_prompt(name, **values) -> str:
@@ -101,7 +101,9 @@ class OpenAIClient:
             data = response.json()
             usage = data.get('usage')
             if usage and step is not None:
-                step.record_usage(model, usage.get('prompt_tokens', 0), usage.get('completion_tokens', 0))
+                step.record_usage(model, usage.get('prompt_tokens', 0), usage.get('completion_tokens', 0),
+                                  cached_tokens=(usage.get('prompt_tokens_details') or {}).get('cached_tokens', 0))
+                step.meta['resolved_model'] = data.get('model', model)
             message = data['choices'][0]['message']
             if message.get('refusal'):
                 raise LLMError(f"모델이 거절했어요: {message['refusal']}")

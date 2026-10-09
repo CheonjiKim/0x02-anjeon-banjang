@@ -12,7 +12,7 @@ _PATTERNS = {
         (r'사다리|말비계', '사다리·말비계'),
     ],
     'height': [
-        (r'(\d+)\s*(?:m|미터)\s*(?:높이|위|상공|에서)?', 'm'),
+        (r'(?<![\d.\-])(\d+(?:\.\d+)?)\s*(?:m|미터)\s*(?:높이|위|상공|에서)?', 'm'),
         (r'지상|바닥', '지상'),
     ],
     'floor': [(r'(\d+)\s*층', '층')],
@@ -36,7 +36,7 @@ _PATTERNS = {
 
 
 def extract_with_spans(text: str) -> tuple[Conditions, dict[str, str]]:
-    """조건 여섯 개와 실제 매치된 원문 구절을 돌려준다."""
+    """조건 일곱 개와 실제 매치된 원문 구절을 돌려준다."""
     values = {}
     spans = {}
     for key, patterns in _PATTERNS.items():
@@ -44,6 +44,12 @@ def extract_with_spans(text: str) -> tuple[Conditions, dict[str, str]]:
         for pattern, value in patterns:
             match = re.search(pattern, text)
             if match is None:
+                continue
+            # A negated low-risk phrase is not evidence for lowering a check.
+            if value in {'없음', '양호', '지상'} and re.match(
+                r'\s*(?:(?:작업)?(?:이|은|는|가)?\s*(?:아니|아님|아닌)|하지\s*(?:않|못)|하지는\s*않)',
+                text[match.end():],
+            ):
                 continue
             if value in ('층', 'm', '명'):
                 number = next(group for group in match.groups() if group is not None)
