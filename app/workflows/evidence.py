@@ -1,6 +1,6 @@
 """사진 판정은 확인됨일 때만 한 번 더 검증한다."""
 
-from app.llm import JudgeOut, MockClient, VerifyOut, get_vision_client
+from app.llm import JudgeOut, MockClient, VerifyOut, get_vision_client, vision_mode
 from app.pipeline.rules import photo_hint
 from app.schemas import ChecklistItem, EvidenceResult, Judgement, TodoCard
 from app.tracing import trace_run
@@ -16,6 +16,7 @@ def run_evidence(item: ChecklistItem, photo: bytes, *, forced: str | None = None
                  task_id: int | None = None) -> EvidenceResult:
     """판정 또는 검증이 실패하면 판단불가로 내려 사람에게 넘긴다."""
     hint = photo_hint(item.code, item.title)
+    mode = 'mock' if forced is not None or scenario is not None else vision_mode()
     with trace_run('evidence', item_code=item.code, task_id=task_id) as trace:
         with trace.step('judge', item_code=item.code, photo=photo, forced=forced, scenario=scenario) as step:
             try:
@@ -49,5 +50,5 @@ def run_evidence(item: ChecklistItem, photo: bytes, *, forced: str | None = None
         )
         with trace.step('decide', result=final.result) as step:
             step.output = {'result': final.result, 'todo': todo.model_dump() if todo else None}
-    return EvidenceResult(run_id=trace.run_id, judgement=final, first=first,
+    return EvidenceResult(mode=mode, run_id=trace.run_id, judgement=final, first=first,
                           verified=verified, todo=todo)

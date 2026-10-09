@@ -3,7 +3,7 @@ import { formatClockedInAt } from '../lib/session.js';
 
 export default function SessionHeader({ user, onClockOut }) {
   return (
-    <header className="app-bg flex items-center justify-between border-b border-line/70 px-[22px] py-3">
+    <header className="app-bg flex shrink-0 items-center justify-between border-b border-line/70 px-[22px] py-3">
       <div>
         <p className="text-sm font-extrabold text-ink">{user.name} <span className="font-medium text-ink-sub">· {user.role === 'admin' ? '관리자' : '근로자'}</span></p>
         <p className="mt-0.5 text-xs text-ink-sub">{formatClockedInAt(user.clockedInAt)}</p>

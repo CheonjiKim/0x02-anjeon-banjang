@@ -21,6 +21,7 @@ export default function Evidence() {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState('');
   const [reasons, setReasons] = useState({});
+  const [mode, setMode] = useState('unknown');
   const taskId = localStorage.getItem('banjang.taskId');
 
   async function load() {
@@ -31,6 +32,7 @@ export default function Evidence() {
     setSelectedCode((current) => current || loadedTask.checklist[0]?.code || '');
   }
   useEffect(() => { load().catch((error) => setMessage(error.message)); }, []);
+  useEffect(() => { api('/runtime').then(value => setMode(value.vision_mode)).catch(() => setMode('unavailable')); }, []);
 
   async function submit(event) {
     event.preventDefault();
@@ -43,7 +45,7 @@ export default function Evidence() {
     setPending(true); setMessage('');
     try {
       const result = await api('/evidence', { method: 'POST', body });
-      setMessage(`${RESULT_LABELS[result.result]} · ${result.points ? `+${result.points}점 적립` : '점수 적립 없음'}`);
+      setMessage(`${result.mode === 'mock' ? '모의 판정 (실제 사진 분석 아님)' : result.mode === 'openai' ? '실제 AI 판정' : '판정 모드 확인 필요'} · ${RESULT_LABELS[result.result]} · ${result.points ? `+${result.points}점 적립` : '점수 적립 없음'} · ${result.observed}${result.retake_hint ? ' · ' + result.retake_hint : ''}`);
       setPhoto(null);
       await load();
     } catch (error) { setMessage(error.message); }
@@ -65,6 +67,7 @@ export default function Evidence() {
       <Panel>
         <div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-soft text-brand-primary"><ShieldCheck /></span><div><b>안전 조치 사진 등록</b><p className="text-sm text-ink-sub">확인된 사진만 점수가 반영됩니다.</p></div></div>
         <form className="mt-5" onSubmit={submit}>
+          <p role="status" className="mb-4 rounded-xl bg-warn-soft p-3 text-sm font-bold">{useMock || mode === 'mock' ? '모의 판정 모드 · 실제 사진을 분석하지 않습니다.' : mode === 'openai' ? '실제 AI 판정 모드 · 사진을 외부 AI로 전송합니다.' : '판정 모드를 확인하지 못했습니다. 새로고침해 주세요.'}</p>
           <label className="block text-sm font-bold">확인할 항목
             <select value={selectedCode} onChange={(event) => setSelectedCode(event.target.value)} className="mt-2 w-full rounded-xl border border-line bg-white p-3">
               {task?.checklist.map((item) => <option key={item.code} value={item.code}>{item.level === 'required' ? '[필수] ' : '[권장] '}{item.title}</option>)}
@@ -79,7 +82,7 @@ export default function Evidence() {
             <label className="mt-3 flex items-center gap-2"><input type="checkbox" checked={useMock} onChange={(event) => setUseMock(event.target.checked)} />시연용 mock 결과 사용</label>
             {useMock && <select value={scenario} onChange={(event) => setScenario(event.target.value)} className="mt-3 w-full rounded-xl border border-line bg-white p-3">{MOCK_SCENARIOS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>}
           </details>
-          <AppButton big className="mt-5 w-full" disabled={!photo || !selectedCode || pending}><Camera className="mr-2 inline" size={20} />{pending ? 'AI 판정 중…' : '사진 판정 요청'}</AppButton>
+          <AppButton big className="mt-5 w-full" disabled={!photo || !selectedCode || pending || (!useMock && !['mock', 'openai'].includes(mode))}><Camera className="mr-2 inline" size={20} />{pending ? '사진 판정 중…' : useMock || mode === 'mock' ? '모의 사진 판정 요청' : '사진 판정 요청'}</AppButton>
         </form>
       </Panel>
 
