@@ -1,0 +1,4 @@
+{
+  "_comment": "모델별 단가(USD, 100만 토큰당). 키는 BANJANG_MODEL_* 에 넣은 모델 이름과 같아야 한다. 단가는 OpenAI 공식 가격표에서 확인해 넣는다. 없는 모델은 비용 0으로 집계되고 실행 기록에 price_missing이 남는다.",
+  "mock": {"input_per_1m": 0, "output_per_1m": 0}
+}

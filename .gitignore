@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/*.db
+data/uploads/
+data/traces/
+eval/out/
+.env
+
+# 프런트엔드(web/)
+node_modules/
+dist/
+
+# 개인 문서(팀 공유 안 함)
+.personal/

@@ -1,0 +1,73 @@
+@import 'tailwindcss';
+@import 'konsta/react/theme.css';
+@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+
+@theme {
+  --color-brand-primary: #1d4ed8;
+  --color-brand-dark: #1e3a8a;
+  --color-brand-soft: #dbeafe;
+  --color-ok: #15803d;
+  --color-ok-soft: #dcfce7;
+  --color-warn: #b45309;
+  --color-warn-fill: #f59e0b;
+  --color-warn-soft: #fef3c7;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fee2e2;
+  --color-review: #6d28d9;
+  --color-review-soft: #ede9fe;
+  --color-app-bg: #f2f4f7;
+  --color-line: #d0d5dd;
+  --color-ink: #111827;
+  --color-ink-sub: #4b5563;
+  --shadow-card: 0 4px 32px rgba(0, 0, 0, 0.04);
+  --shadow-cta: 0 10px 24px rgba(29, 78, 216, 0.28);
+  --font-sans: 'Pretendard Variable', Pretendard, system-ui, -apple-system, 'Noto Sans KR', sans-serif;
+}
+
+:root {
+  --k-color-primary: #1d4ed8;
+  --k-color-md-light-primary: #1d4ed8;
+  --k-color-md-light-on-primary: #ffffff;
+  --k-color-md-light-primary-container: #dbeafe;
+  --k-color-md-light-on-primary-container: #1e3a8a;
+  --k-color-md-light-secondary-container: #dbeafe;
+  --k-color-md-light-on-secondary-container: #1e3a8a;
+  --k-color-md-light-surface: #f2f4f7;
+  --k-color-md-light-surface-1: #ffffff;
+  --k-color-md-light-surface-2: #ffffff;
+  --k-color-md-light-surface-3: #ffffff;
+  --k-color-md-light-surface-4: #ffffff;
+  --k-color-md-light-surface-5: #ffffff;
+  --k-color-md-light-surface-variant: #f2f4f7;
+  --k-color-md-light-on-surface-variant: #4b5563;
+  --k-color-md-light-outline: #d0d5dd;
+}
+
+html { color-scheme: light; }
+body {
+  margin: 0;
+  background: var(--color-app-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.5;
+  word-break: keep-all;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+#root > * { font-family: var(--font-sans); }
+input, textarea, select { font-size: 16px; }
+::placeholder { color: #6b7280; }
+.tnum { font-variant-numeric: tabular-nums; }
+.app-bg {
+  background:
+    radial-gradient(ellipse at 100% 0%, #dbeafe 0%, transparent 45%),
+    radial-gradient(ellipse at 0% 30%, #dcfce7 0%, transparent 40%),
+    radial-gradient(ellipse at 100% 72%, #fef3c7 0%, transparent 40%),
+    #f8fafc !important;
+}
+@keyframes badge-pop {
+  from { transform: scale(1.5); }
+  to { transform: scale(1); }
+}
+.badge-pop { animation: badge-pop 0.3s ease-out; }

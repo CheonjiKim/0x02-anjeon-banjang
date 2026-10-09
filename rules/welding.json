@@ -1,0 +1,101 @@
+{
+  "schema_version": "0.1",
+  "work_type": "welding",
+  "label": "용접·용단",
+  "rules": [
+    {
+      "id": "V1",
+      "title": "화재감시자",
+      "hazard": "불티가 가연물에 옮겨붙어 화재로 번지고 대피가 늦어짐",
+      "protections": [
+        "화재감시자를 지정해 배치",
+        "업무: 가연물 확인, 가스 검지·경보 장치 작동 확인, 대피 유도",
+        "확성기·휴대용 조명기구·화재 대피용 마스크 지급",
+        "감시·대피 유도 업무만 맡김(가이드)"
+      ],
+      "applies_when": { "any": [ { "combustibles_nearby": "yes" }, { "combustibles_below_or_behind": "yes" } ] },
+      "exceptions": ["같은 장소 상시·반복 작업 + 경보·소화설비 또는 소화기 구비 시 생략 가능"],
+      "level": { "when_applies": "required", "otherwise": "recommended", "when_unknown": "required" },
+      "evidence": { "method": "partial_photo", "photo_items": ["fire_watcher_with_equipment"], "ask": true },
+      "source": { "basis": "legal", "articles": ["산안규칙 제241조의2"], "status": "verified_via_guide" }
+    },
+    {
+      "id": "V2",
+      "title": "불티 비산방지·가연물 방호",
+      "hazard": "1,600도 이상 불티가 높이·바람에 따라 11m를 넘어 최대 약 15m까지 날아감(가이드 예시)",
+      "protections": [
+        "성능인증 방화포(2026.3.2부터) 또는 불티관통 방지 성능 재료로 가연물 덮기",
+        "가연물은 별도 보관하고 필요한 양만 두기",
+        "벽·바닥·덕트의 개구부와 틈새 덮기"
+      ],
+      "applies_when": { "combustibles_present": "yes" },
+      "range_up_when": [ { "work_height": "over_2m" }, { "location": "outdoor" } ],
+      "exceptions": [],
+      "level": { "when_applies": "required", "otherwise": "recommended", "when_unknown": "required" },
+      "evidence": { "method": "photo", "photo_items": ["fire_blanket_installed"], "ask": false },
+      "source": { "basis": "legal", "articles": ["산안규칙 제241조 제2항 4호", "산안규칙 제236조 제2항"], "secondary": ["건설현장 화재안전성능기준 NFPC 606"], "status": "verified_via_guide" }
+    },
+    {
+      "id": "V3",
+      "title": "소화기구 비치",
+      "hazard": "초기 진화 수단이 없어 불씨가 커짐",
+      "protections": [
+        "작업 장소 가까이에 소화기구 비치",
+        "소방 정리: 화재위험작업 시 소화기 2개 + 대형소화기 1개(현행 수량·거리는 원문 확인 필요)"
+      ],
+      "applies_when": { "combustibles_present": "yes" },
+      "exceptions": [],
+      "level": { "when_applies": "required", "otherwise": "recommended", "when_unknown": "required" },
+      "evidence": { "method": "photo", "photo_items": ["extinguisher_present"], "ask": false },
+      "source": { "basis": "legal", "articles": ["산안규칙 제241조 제2항 3호"], "secondary": ["소방시설법 시행령 임시소방시설 기준"], "status": "needs_check" }
+    },
+    {
+      "id": "V4",
+      "title": "환기·동시작업 통제",
+      "hazard": "우레탄·도장 유증기에 불티가 옮겨붙음, 밀폐공간에서 질식·폭발",
+      "protections": [
+        "인화성 증기·가스가 남지 않게 환기",
+        "환기용으로 산소를 쓰지 않기",
+        "인화성 물질을 쓰는 작업과 안전거리 안에서 동시에 작업하지 않기",
+        "밀폐공간은 별도 절차"
+      ],
+      "applies_when": { "any": [ { "concurrent_flammable_work": "yes" }, { "ventilation": "enclosed" }, { "combustibles_present": "yes" } ] },
+      "exceptions": [],
+      "level": { "when_applies": "required", "otherwise": "recommended", "when_unknown": "required" },
+      "evidence": { "method": "supervisor", "photo_items": [], "ask": true },
+      "source": { "basis": "legal+guideline", "articles": ["산안규칙 제241조 제1항", "산안규칙 제241조 제2항 5호", "산안규칙 제232조", "산안규칙 제239조"], "guideline": ["KOSHA GUIDE A-G-14-2026 6.1(6)"], "status": "verified_via_guide" },
+      "design_note": "동시작업 금지는 가이드(권고)지만 사고 사례(2020 이천, 2025 반얀트리)를 근거로 필수로 안내"
+    },
+    {
+      "id": "V5",
+      "title": "작업 후 화재 감시",
+      "hazard": "단열재·보온재에 파고든 불티가 시간이 지나 다시 불붙음",
+      "protections": [
+        "작업 종료 후 적어도 30분 화재 감시(가이드)",
+        "주변 불티·틈새 확인, 토치·호스 정리, 가스 밸브 잠금"
+      ],
+      "applies_when": { "always": true },
+      "exceptions": [],
+      "level": { "when_applies": "recommended", "otherwise": "recommended", "when_unknown": "recommended" },
+      "evidence": { "method": "supervisor", "photo_items": [], "ask": true, "timer_minutes": 30 },
+      "source": { "basis": "guideline", "articles": ["KOSHA GUIDE A-G-14-2026 7.1(17)"], "status": "verified_via_guide" },
+      "design_note": "법정 의무로 단정하지 않음. 지역 소방서 안내는 1시간 이상도 있음"
+    },
+    {
+      "id": "V6",
+      "title": "작업 준비·교육·작업 전 확인·서면 게시",
+      "hazard": "절차·교육 없이 작업해 비상 대응에 실패",
+      "protections": [
+        "작업 준비·절차 수립, 위험물 현황 파악",
+        "근로자 화재예방·피난교육",
+        "작업 시작 전 확인과 안전조치 이행",
+        "작업내용·일시·안전점검·조치사항 서면 게시"
+      ],
+      "applies_when": { "combustibles_present": "yes" },
+      "exceptions": ["같은 장소 상시·반복 작업은 서면 게시 생략 가능"],
+      "level": { "when_applies": "required", "otherwise": "recommended", "when_unknown": "required" },
+      "evidence": { "method": "partial_photo", "photo_items": ["posting_visible"], "ask": true },
+      "source": { "basis": "legal", "articles": ["산안규칙 제241조 제2항 1·2·6호", "산안규칙 제241조 제3항", "산안규칙 제241조 제4항"], "status": "verified_via_guide" }
+    }
+  ]
+}
