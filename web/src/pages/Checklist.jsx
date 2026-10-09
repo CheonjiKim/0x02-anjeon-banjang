@@ -39,11 +39,11 @@ export default function Checklist() {
         <div className="mt-4 grid grid-cols-2 gap-2">
           {Object.entries(task.conditions).map(([key, value]) => (
             <div key={key} className={`rounded-xl p-3 text-sm ${value === '알 수 없음' ? 'bg-warn-soft text-warn' : 'bg-brand-soft text-brand-dark'}`}>
-              <p className="font-bold">{CONDITION_LABELS[key]}</p><p>{value}</p>
+              <p className="font-bold">{CONDITION_LABELS[key]}</p><p>{value === '알 수 없음' ? '정보 없음' : value}</p>
             </div>
           ))}
         </div>
-        {unknown.length > 0 && <p className="mt-4 flex gap-2 text-sm text-warn"><TriangleAlert size={18} />확인하지 못한 조건은 필수 조치로 안내합니다.</p>}
+        {unknown.length > 0 && <p className="mt-4 flex gap-2 text-sm text-warn"><TriangleAlert size={18} />정보가 없는 조건은 실제로 ‘없음’이 확인된 것이 아니므로 필수 조치로 안내합니다.</p>}
       </Panel>
 
       <Panel className="mt-4">
