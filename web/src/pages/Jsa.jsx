@@ -18,7 +18,7 @@ export default function Jsa() {
   const [busy, setBusy] = useState(false);
 
   const load = () => api('/jsas').then(setItems).catch(error => setMessage(error.message));
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
 
   async function createDraft() {
     setBusy(true); setMessage('');

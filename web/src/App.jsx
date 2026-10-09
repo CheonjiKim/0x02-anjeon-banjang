@@ -5,6 +5,8 @@ import { STROKE } from './components/ui.jsx';
 import Calendar from './pages/Calendar.jsx';
 import Workers from './pages/Workers.jsx';
 import Jsa from './pages/Jsa.jsx';
+import WorkerTask from './pages/WorkerTask.jsx';
+import WorkerReports from './pages/WorkerReports.jsx';
 import TaskInput from './pages/TaskInput.jsx';
 import Checklist from './pages/Checklist.jsx';
 import Todo from './pages/Todo.jsx';
@@ -76,13 +78,13 @@ export default function App() {
         <Route path="/calendar" element={<RequireSession user={user} role="admin"><Calendar /></RequireSession>} />
         <Route path="/jsa" element={<RequireSession user={user} role="admin"><Jsa /></RequireSession>} />
         <Route path="/worker/calendar" element={<RequireSession user={user} role="worker"><Calendar worker /></RequireSession>} />
-        <Route path="/worker/photos" element={<RequireSession user={user} role="worker"><WorkerForm /></RequireSession>} />
+        <Route path="/worker/photos" element={<RequireSession user={user} role="worker"><WorkerReports /></RequireSession>} />
         <Route path="/checklist" element={<RequireSession user={user} role="admin"><Checklist /></RequireSession>} />
         <Route path="/todo" element={<RequireSession user={user} role="admin"><Todo /></RequireSession>} />
         <Route path="/evidence" element={<RequireSession user={user} role="admin"><Evidence /></RequireSession>} />
         <Route path="/ranking" element={<RequireSession user={user} role="admin"><Ranking /></RequireSession>} />
         <Route path="/eval" element={<RequireSession user={user} role="admin"><Eval /></RequireSession>} />
-        <Route path="/worker/task" element={<RequireSession user={user} role="worker"><WorkerForm /></RequireSession>} />
+        <Route path="/worker/task" element={<RequireSession user={user} role="worker"><WorkerTask /></RequireSession>} />
         <Route path="/worker/attendance" element={<RequireSession user={user} role="worker"><Attendance /></RequireSession>} />
         <Route path="/worker/training" element={<RequireSession user={user} role="worker"><Training /></RequireSession>} />
         <Route path="/worker/incidents" element={<RequireSession user={user} role="worker"><Incidents worker /></RequireSession>} />

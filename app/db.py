@@ -173,6 +173,7 @@ def init_db(path: str | Path) -> None:
         _add_column(conn, 'worker_forms', 'worker_id INTEGER REFERENCES workers(id)')
         _add_column(conn, 'evidence_photos', 'worker_id INTEGER REFERENCES workers(id)')
         _add_column(conn, 'users', 'worker_id INTEGER REFERENCES workers(id)')
+        _add_column(conn, 'incidents', 'photo_path TEXT')
         if conn.execute('SELECT COUNT(*) FROM sites').fetchone()[0] == 0:
             conn.execute("INSERT INTO sites(id, name) VALUES (1, '기본 현장')")
             conn.executemany(
