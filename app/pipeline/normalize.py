@@ -4,7 +4,7 @@ import re
 
 from app.schemas import UNKNOWN, Conditions
 
-WORKS = {'용접·용단', '그라인더·절단'}
+WORKS = {'용접·용단', '절단·원형톱', '도장·방수', '사다리·말비계'}
 FLAMMABLES = {'합판', '스티로폼', '단열재', '우레탄', '종이', '박스', '페인트', '시너', '없음'}
 PLACES = {'지하 주차장', '지하주차장', '지하실', '지하', '옥상', '외부', '실내', '탱크', '맨홀', '피트', '터널', '계단실', '기계실'}
 LOWERING = {'flammable': '없음', 'ventilation': '양호', 'nearby_people': '없음', 'height': '지상'}

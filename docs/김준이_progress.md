@@ -1,19 +1,19 @@
 # 김준이 작업 현황
 
-2026-10-09 기준. 담당: 수칙 데이터·점수·연속 기록. **K1·K2는 로컬 `main`에 반영했고, K3는 김천지 C4 API 병합을 기다린다.**
+2026-10-09 기준. 담당: 수칙 데이터·점수·연속 기록. **K1·K2·K4는 로컬 `main`에 반영했고, K3는 김천지 C4 API 병합을 기다린다.**
 
-기준: [김준이 담당 노션](https://app.notion.com/p/3f3b00a36e9b81da8f82e5dfc972fadc). 선행 조건은 사용자 지시에 따라 원격이 아닌 로컬 `main`에서 확인한다. 이 문서는 진행 현황 기록이며, K4 폴더 README 작업은 아직 시작하지 않았다.
+기준: [김준이 담당 노션](https://app.notion.com/p/3f3b00a36e9b81da8f82e5dfc972fadc). 선행 조건은 사용자 지시에 따라 원격이 아닌 로컬 `main`에서 확인한다. 이 문서는 진행 현황 기록이다.
 
 | 단계 | 브랜치 | 현재 상태 | 로컬 `main` 병합 커밋 |
 | --- | --- | --- | --- |
 | K1 수칙 데이터 | `feature/jun-rules-data` | 완료 | `e7d32b1` |
 | K2 점수·연속 기록·집계 | `feature/jun-scoring` | 완료 | `47433c5` |
 | K3 사고·참여 기록 API 테스트 | `feature/jun-scoring-api-tests` | 김천지 C4 API 병합 대기 | 미반영 |
-| K4 `rules/`·`scoring/` README | `feature/jun-docs` | K3 완료·병합 후 진행 | 미반영 |
+| K4 `rules/`·`scoring/` README | `feature/jun-docs` | 완료 | `d89847a` |
 
 ## 완료한 작업
 
-K1은 사람이 작성한 [용접·용단 V1~V6](../rules/welding.json)와 [그라인더·절단 R1~R6](../rules/grinding_cutting.json)를 원본 그대로 복사했다. 문서에 열거되지 않은 원본 필드와 검증 상태는 유지하고 [담당자 확인 요청](jun-rules-data-review.md)에 기록했다. 그 문서의 K2 대기 설명은 K1 당시의 기록이며, 현재 K2는 완료됐다. 수칙 평가 엔진과 조건·코드 매핑은 구현하지 않았다.
+K1 수칙 데이터는 네 가지 PoC 작업으로 정리했다. [용접·용단](../rules/welding.json), [절단·원형톱](../rules/circular_saw.json), [도장·방수](../rules/painting_waterproofing.json), [사다리·말비계](../rules/ladder_horse_scaffold.json)의 시나리오와 조건 매핑은 [PoC 대응표](../rules/poc_scenarios.json)에 기록했다. 그라인더는 PoC 범위에서 제외했다. 법적 근거가 검수되지 않은 항목은 `needs_check` 상태를 유지한다.
 
 K2는 다음 담당 파일만 추가했다.
 

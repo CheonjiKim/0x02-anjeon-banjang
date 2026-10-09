@@ -1,3 +1,5 @@
+import pytest
+
 from app.schemas import ChecklistItem
 from app.tracing import read_traces
 from app.workflows import QUESTION_OPTIONS, run_evidence, run_task, run_tbm
@@ -80,5 +82,43 @@ def test_extract_falls_back_to_keywords_when_llm_unavailable(monkeypatch):
 
 
 def test_question_options_match_the_foreman_patch_contract():
-    assert QUESTION_OPTIONS['work'] == ['용접·용단', '그라인더·절단']
+    assert QUESTION_OPTIONS['work'] == ['용접·용단', '절단·원형톱', '도장·방수', '사다리·말비계']
     assert QUESTION_OPTIONS['flammable'] == ['합판', '스티로폼', '없음']
+
+
+@pytest.mark.parametrize(
+    ('text', 'work', 'required'),
+    [
+        ('2층 각파이프 용접, 옆에 합판', '용접·용단', {'fire-watch', 'spark-cover', 'extinguisher', 'ventilation', 'hot-work-posting'}),
+        ('원형톱으로 합판 절단', '절단·원형톱', {'saw-guard', 'saw-kickback', 'cutting-ppe', 'power-tool-electric', 'cutting-fire'}),
+        ('지하 주차장 바닥 우레탄 방수, 환기 불량', '도장·방수', {'paint-ventilation', 'paint-respirator', 'no-ignition', 'msds-posting', 'flammable-containers'}),
+        ('사다리 3m 올라가서 조명 교체', '사다리·말비계', {'fall-height-check', 'ladder-use', 'horse-scaffold', 'helmet-chinstrap', 'ladder-buddy', 'scaffold-clear-deck'}),
+    ],
+)
+def test_four_poc_work_types_make_their_own_required_checklist(text, work, required):
+    result = run_task(text)
+    assert result.conditions.work == work
+    assert required <= {item.code for item in result.checklist if item.level == 'required'}
+
+
+def test_unknown_work_keeps_all_four_poc_checklists_required():
+    result = run_task('배관 작업 합니다')
+    codes = {item.code for item in result.checklist if item.level == 'required'}
+    assert {'cutting-fire', 'paint-ventilation', 'ladder-use', 'fire-watch'} <= codes
+
+
+def test_painting_mixed_with_welding_warns_the_foreman():
+    result = run_task('용접과 같은 층에서 우레탄 방수 페인트 작업, 환기 불량')
+    assert 'mixed-work-warning' in {item.code for item in result.checklist if item.level == 'required'}
+
+
+@pytest.mark.parametrize(
+    ('text', 'risk_code'),
+    [
+        ('원형톱으로 합판 절단', 'cutting'),
+        ('지하 주차장 바닥 우레탄 방수, 환기 불량', 'chemical'),
+        ('사다리 3m 올라가서 조명 교체', 'ladder-fall'),
+    ],
+)
+def test_poc_work_type_changes_risk_assessment(text, risk_code):
+    assert risk_code in {item.code for item in run_task(text).risks}
