@@ -1,0 +1,5 @@
+{
+  "is_sample": false,
+  "source": "작업 31건·TBM 10건은 준이 작성·검토 완료(2026-10-09). 기본 사진 라벨(photos.jsonl) 7건은 재은의 뼈대 점검용 샘플. AI-Hub 사진 88장(photos_aihub.jsonl)은 준이 추출 후보로 천지 검수 전.",
+  "note": "사진 숫자는 아직 실물 평가가 아니다. 사진 평가는 --photos eval/data/photos_aihub.jsonl로 돌리고, 천지 검수가 끝나면 photos.jsonl로 옮긴다."
+}

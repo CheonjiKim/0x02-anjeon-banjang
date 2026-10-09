@@ -1,0 +1,12 @@
+// TBM 라벨 10건. said = 반장이 실제로 말한 문장, missing = 그때 빠졌다고 지적해야 하는 필수 항목 코드.
+// 초안 2026-10-08: missing은 tasks.jsonl의 같은 작업 required에서 said가 다룬 항목을 뺀 값. 준이님 검토 전.
+{"id": "m001", "task_text": "2층 각파이프 용접, 옆에 합판", "said": ["소화기 비치"], "missing": ["fire-watch", "spark-cover", "ventilation", "hot-work-posting"], "note": "시연 기준 장면. 화재감시자·방지포·환기·게시 누락"}
+{"id": "m002", "task_text": "2층 각파이프 용접, 옆에 합판", "said": ["화재감시자 배치", "소화기 비치", "불티 비산 방지포 설치", "환기 확인", "작업 내용 서면 게시"], "missing": [], "note": "다 말한 경우"}
+{"id": "m003", "task_text": "2층 각파이프 용접, 옆에 합판", "said": [], "missing": ["fire-watch", "spark-cover", "extinguisher", "ventilation", "hot-work-posting"], "note": "아무것도 말하지 않은 경우"}
+{"id": "m004", "task_text": "2층 각파이프 용접, 옆에 합판", "said": ["불꽃 튀는 거 막는 천 깔았어요", "소화기 옆에 둠"], "missing": ["fire-watch", "ventilation", "hot-work-posting"], "note": "현장 말투"}
+{"id": "m005", "task_text": "원형톱으로 합판 절단", "said": ["톱날 덮개 확인", "보안경 쓰고 작업"], "missing": ["saw-kickback", "power-tool-electric", "cutting-fire"], "note": "보안경 하나로 보호구 항목을 말한 것으로 본다"}
+{"id": "m006", "task_text": "1층 실내에서 각관 절단, 주변에 박스 쌓여 있음", "said": ["소화기 갖다 놓고 박스 치우기"], "missing": ["saw-guard", "saw-kickback", "cutting-ppe", "power-tool-electric"], "note": "반발 예방·보호구·전기 누락"}
+{"id": "m007", "task_text": "지하 주차장 바닥 우레탄 방수, 환기 불량", "said": ["환풍기 틀고 작업", "방독마스크 착용"], "missing": ["no-ignition", "msds-posting", "flammable-containers"], "note": "화기 금지·MSDS 누락"}
+{"id": "m008", "task_text": "박 씨 같은 층 방수 페인트", "said": ["불 쓰지 말 것", "마스크 꼭 쓰기"], "missing": ["paint-ventilation", "confined-space", "msds-posting", "flammable-containers"], "note": "'마스크'는 방독마스크로 본다"}
+{"id": "m009", "task_text": "사다리 3m 올라가서 조명 교체", "said": ["사다리 잡아 줄 사람 한 명 붙이기", "안전모 턱끈 조이기"], "missing": ["fall-height-check", "ladder-use", "horse-scaffold", "scaffold-clear-deck"], "note": "높이 확인·사다리 설치·말비계 누락"}
+{"id": "m010", "task_text": "이 씨 사다리로 천장 작업", "said": ["오늘 덥네요, 물 많이 드세요"], "missing": ["fall-height-check", "ladder-use", "horse-scaffold", "helmet-chinstrap", "ladder-buddy", "scaffold-clear-deck"], "note": "안전 항목과 무관한 말"}
