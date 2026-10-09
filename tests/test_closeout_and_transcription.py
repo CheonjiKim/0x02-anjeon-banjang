@@ -39,6 +39,21 @@ def test_closeout_photo_and_manager_review(client, tmp_path):
     assert client.get('/api/tbm-suggestions', params={'task_id': task['id']}).json()['suggestions'] == ['통로 정리 필요']
 
 
+def test_latest_tbm_returns_final_text_and_missing_rules(client):
+    task = client.post('/api/tasks', json={'text': '용접 작업, 옆에 합판'}).json()
+    saved = client.post('/api/tbm', json={
+        'task_id': task['id'], 'transcript': '보안경을 착용합니다.', 'memo': '통로를 정리합니다.', 'attendees': '김작업',
+    })
+    assert saved.status_code == 201
+    latest = client.get('/api/tbm/latest', params={'task_id': task['id']})
+    assert latest.status_code == 200
+    assert latest.json()['transcript'] == '보안경을 착용합니다.'
+    assert latest.json()['memo'] == '통로를 정리합니다.'
+    assert latest.json()['attendees'] == '김작업'
+    assert latest.json()['missing']
+    assert client.get('/api/tbm/latest', params={'task_id': 999}).status_code == 404
+
+
 def test_closeout_must_be_requested_and_incident_awards_points(client):
     task = client.post('/api/tasks', json={'text': '용접 작업', 'close_requested': False}).json()
     assert client.post('/api/worker-forms', json={'task_id': task['id'], 'ppe_worn': True}).status_code == 409
