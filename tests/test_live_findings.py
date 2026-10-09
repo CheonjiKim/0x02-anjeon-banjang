@@ -1,4 +1,5 @@
 import json
+from io import BytesIO
 
 import pytest
 
@@ -8,6 +9,8 @@ from app.pipeline.rules import build_checklist, photo_hint
 from app.schemas import Conditions, UNKNOWN
 from app.tracing import Step, trace_run, read_traces
 from eval.metrics import cost_and_latency, per_flow
+from PIL import Image
+from app.pipeline.photo_quality import is_extremely_dark
 
 
 @pytest.mark.parametrize('height', ['0.5m', '1.5m', '1.9m', '2.0m', '2.5m', '10.25m'])
@@ -75,3 +78,30 @@ def test_incomplete_price_entry_is_unknown_not_free(tmp_path, monkeypatch):
     monkeypatch.setenv('BANJANG_PRICES', str(path))
     step = Step('judge'); step.record_usage('broken', 100, 20)
     assert step.cost_usd is None
+
+
+def test_dark_exposure_guard_preserves_readable_frames_and_skips_api(monkeypatch):
+    from app.workflows.evidence import run_evidence
+    from app.schemas import ChecklistItem
+    import app.workflows.evidence as workflow
+
+    def photo(value):
+        stream = BytesIO()
+        Image.new('RGB', (80, 80), (value, value, value)).save(stream, 'PNG')
+        return stream.getvalue()
+
+    assert is_extremely_dark(photo(5))
+    assert not is_extremely_dark(photo(80))
+    assert not is_extremely_dark(b'invalid')
+
+    class NoCall:
+        name = 'openai'
+        def judge(self, *args, **kwargs):
+            pytest.fail('near-black images must not reach the API')
+
+    monkeypatch.setattr(workflow, 'vision_mode', lambda: 'openai')
+    monkeypatch.setattr(workflow, 'get_vision_client', lambda: NoCall())
+    result = run_evidence(ChecklistItem(code='extinguisher', title='소화기', level='required'), photo(5))
+    assert result.judgement.result == 'uncertain'
+    assert result.verified is None and result.todo is not None
+    assert '조명' in result.judgement.retake_hint
