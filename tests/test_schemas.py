@@ -57,8 +57,8 @@ def test_api_contract():
     assert s.TbmOut(id=1).missing == []
     assert s.WorkerFormIn(task_id=1, understood=True, ppe_worn=False).risk_note == ''
     assert s.RiskItem(code='a', hazard='화재', likelihood='상', severity='중', measure='조치').severity == '중'
-    with pytest.raises(ValidationError):
-        s.WorkerFormIn(task_id=1, understood=True)
+    assert s.WorkerFormIn(task_id=1).ppe_worn is None
+    assert s.WorkerFormIn(task_id=1).understood is None
     with pytest.raises(ValidationError):
         s.RiskItem(code='a', hazard='화재', likelihood='높음', severity='중', measure='조치')
 

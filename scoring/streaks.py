@@ -13,8 +13,14 @@ def _d(value: str) -> date:
     return date.fromisoformat(value[:10])
 
 
-def active_dates(conn: sqlite3.Connection, site_id: int = 1) -> set[date]:
+def active_dates(conn: sqlite3.Connection, site_id: int = 1, worker_id: int | None = None) -> set[date]:
     """해당 현장에서 점수 이벤트나 TBM 일지가 있는 날짜를 모은다."""
+    if worker_id is not None:
+        rows = conn.execute(
+            'SELECT created_at FROM score_events WHERE site_id = ? AND worker_id = ?',
+            (site_id, worker_id),
+        ).fetchall()
+        return {_d(row['created_at']) for row in rows}
     rows = conn.execute(
         'SELECT created_at FROM score_events WHERE site_id = ? '
         'UNION SELECT tbm_logs.created_at FROM tbm_logs '
@@ -26,10 +32,11 @@ def active_dates(conn: sqlite3.Connection, site_id: int = 1) -> set[date]:
 
 def participation_days(
     conn: sqlite3.Connection, site_id: int = 1, today: date | None = None,
+    *, worker_id: int | None = None,
 ) -> int:
     """오늘 또는 어제부터 거꾸로 이어진 참여 날짜 수를 센다."""
     today = today if today is not None else date.today()
-    recorded = active_dates(conn, site_id)
+    recorded = active_dates(conn, site_id, worker_id)
     current = today if today in recorded else today - timedelta(days=1)
     days = 0
     while current in recorded:
@@ -40,11 +47,12 @@ def participation_days(
 
 def streaks(
     conn: sqlite3.Connection, site_id: int = 1, today: date | None = None,
+    *, worker_id: int | None = None,
 ) -> list[StreakOut]:
     """참여 연속 기록과 무사고 기록을 화면용 모델로 반환한다."""
     return [
         StreakOut(
-            kind='participation', days=participation_days(conn, site_id, today),
+            kind='participation', days=participation_days(conn, site_id, today, worker_id=worker_id),
             label='연속 점검 기록',
         ),
         StreakOut(
@@ -91,10 +99,11 @@ def incident_free_days(
 
 def history(
     conn: sqlite3.Connection, site_id: int = 1, today: date | None = None,
+    *, worker_id: int | None = None,
 ) -> list[dict]:
     """최근 14일의 실제 참여 여부를 오래된 날부터 반환한다."""
     today = today if today is not None else date.today()
-    recorded = active_dates(conn, site_id)
+    recorded = active_dates(conn, site_id, worker_id)
     return [
         {'date': day.isoformat(), 'recorded': day in recorded, 'today': day == today}
         for offset in range(HISTORY_DAYS - 1, -1, -1)

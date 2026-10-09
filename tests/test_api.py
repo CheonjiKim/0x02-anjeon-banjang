@@ -185,6 +185,36 @@ def test_report_tbm_and_worker_form(client):
     assert client.post('/api/worker-forms', json={'task_id': task['id'], 'understood': True, 'ppe_worn': True}).status_code == 201
 
 
+def test_personal_scores_history_and_streak_do_not_include_other_workers(client):
+    client.post('/api/reports', params={'worker_id': 1})
+    empty = client.get('/api/scores', params={'worker_id': 2}).json()
+    assert empty['total'] == 0 and empty['events'] == []
+    assert next(s for s in empty['streaks'] if s['kind'] == 'participation')['days'] == 0
+    assert not any(day['recorded'] for day in empty['history'])
+    client.post('/api/reports', params={'worker_id': 2})
+    client.post('/api/reports', params={'worker_id': 2})
+    own = client.get('/api/scores', params={'worker_id': 2}).json()
+    assert own['total'] == 10
+    assert len(own['events']) == 2
+    assert all(event['worker_id'] == 2 for event in own['events'])
+    assert next(s for s in own['streaks'] if s['kind'] == 'participation')['days'] == 1
+    assert own['history'][-1]['recorded']
+    assert client.get('/api/scores').json()['total'] == 5
+
+
+@pytest.mark.parametrize('answer', [None, False, True])
+def test_closeout_preserves_unknown_no_and_yes_separately(client, answer):
+    task = make_task(client)
+    payload = {'task_id': task['id']}
+    if answer is not None:
+        payload.update(ppe_worn=answer, understood=answer)
+    response = client.post('/api/worker-forms', json=payload)
+    assert response.status_code == 201
+    saved = client.get('/api/worker-forms', params={'task_id': task['id']}).json()[0]
+    assert saved['ppe_worn'] is answer
+    assert saved['understood'] is answer
+
+
 def test_resolve_removes_todo_without_points(client):
     task = make_task(client, FULL)
     client.post('/api/evidence', data={'task_id': str(task['id']), 'item_code': 'extinguisher', 'forced_result': 'uncertain'},
