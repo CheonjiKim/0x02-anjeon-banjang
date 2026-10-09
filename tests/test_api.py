@@ -100,3 +100,18 @@ def test_login_returns_role_for_seed_accounts(client):
     assert admin.json()['role'] == 'admin'
     assert worker.json()['role'] == 'worker'
     assert invalid.status_code == 401
+
+
+def test_eval_latest_returns_newest_report(client, tmp_path, monkeypatch):
+    from eval.run import main
+
+    monkeypatch.setenv('BANJANG_EVAL_OUT', str(tmp_path))
+    assert client.get('/api/eval/latest').status_code == 404
+    report = tmp_path / 'report.json'
+    assert main(['--compare', '--json', str(report)]) == 0
+    response = client.get('/api/eval/latest')
+    assert response.status_code == 200
+    payload = response.json()
+    assert isinstance(payload['dataset']['is_sample'], bool)
+    assert 'rows' not in payload['results']['verify']
+    assert payload['comparison']['variants'] == ['verify', 'no_verify', 'single_call']
