@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { Camera, ClipboardCheck, Clock3, HardHat, ListTodo, ShieldAlert, Trophy, UsersRound } from 'lucide-react';
+import { CalendarDays, Camera, ClipboardCheck, Clock3, FileText, HardHat, ListTodo, ShieldAlert, Trophy, UsersRound } from 'lucide-react';
 import { STROKE } from './components/ui.jsx';
+import Calendar from './pages/Calendar.jsx';
+import Workers from './pages/Workers.jsx';
+import Jsa from './pages/Jsa.jsx';
 import TaskInput from './pages/TaskInput.jsx';
 import Checklist from './pages/Checklist.jsx';
 import Todo from './pages/Todo.jsx';
@@ -19,18 +22,16 @@ import SessionHeader from './components/SessionHeader.jsx';
 import { clearSession, readSession, saveSession } from './lib/session.js';
 
 const tabs = [
-  ['/', '작업', HardHat],
-  ['/reviews', '근로자', UsersRound],
-  ['/tbm', 'TBM', ClipboardCheck],
-  ['/evidence', '사진', Camera],
+  ['/', 'TBM', ClipboardCheck],
+  ['/workers', '작업자관리', UsersRound],
+  ['/calendar', '캘린더', CalendarDays],
+  ['/jsa', 'JSA', FileText],
   ['/ranking', '기록', Trophy],
 ];
-
 const workerTabs = [
-  ['/worker/task', '오늘 작업', HardHat],
-  ['/worker/attendance', '출퇴근', Clock3],
-  ['/worker/training', '교육', ClipboardCheck],
-  ['/worker/incidents', '신고', ShieldAlert],
+  ['/worker/task', '오늘작업', HardHat],
+  ['/worker/photos', '사진', Camera],
+  ['/worker/calendar', '캘린더', CalendarDays],
   ['/worker/records', '내 기록', Trophy],
 ];
 
@@ -71,6 +72,11 @@ export default function App() {
       <div className="relative min-h-0 flex-1 overflow-auto">
       <Routes>
         <Route path="/" element={<RequireSession user={user} role="admin"><TaskInput onClockOut={clockOut} /></RequireSession>} />
+        <Route path="/workers" element={<RequireSession user={user} role="admin"><Workers /></RequireSession>} />
+        <Route path="/calendar" element={<RequireSession user={user} role="admin"><Calendar /></RequireSession>} />
+        <Route path="/jsa" element={<RequireSession user={user} role="admin"><Jsa /></RequireSession>} />
+        <Route path="/worker/calendar" element={<RequireSession user={user} role="worker"><Calendar worker /></RequireSession>} />
+        <Route path="/worker/photos" element={<RequireSession user={user} role="worker"><WorkerForm /></RequireSession>} />
         <Route path="/checklist" element={<RequireSession user={user} role="admin"><Checklist /></RequireSession>} />
         <Route path="/todo" element={<RequireSession user={user} role="admin"><Todo /></RequireSession>} />
         <Route path="/evidence" element={<RequireSession user={user} role="admin"><Evidence /></RequireSession>} />
@@ -91,7 +97,7 @@ export default function App() {
       </div>
       {!standalone && user && (
         <nav aria-label="주 메뉴" className="fixed inset-x-0 bottom-0 z-30 rounded-t-[28px] bg-white pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
-          <div className="grid h-[68px] grid-cols-5">
+          <div className={`grid h-[68px] ${isWorker ? 'grid-cols-4' : 'grid-cols-5'}`}>
             {activeTabs.map(([path, label, Icon]) => (
               <NavLink key={path} to={path} end={path === '/'}
                 className={({ isActive }) => `relative flex min-h-14 flex-col items-center justify-center gap-1 text-[13px] font-bold ${isActive ? 'text-brand-primary' : 'text-ink-sub'}`}>

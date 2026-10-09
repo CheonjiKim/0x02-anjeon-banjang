@@ -20,6 +20,10 @@ export default function Ranking() {
   if (error) return <Screen title="내 기록"><Panel><p className="text-danger">{error}</p></Panel></Screen>;
   if (!scores) return <Screen title="내 기록"><EmptyState icon={Trophy} title="기록을 불러오는 중" /></Screen>;
 
+  if (readSession()?.role === 'admin') return <Screen title="기록"><Panel>
+    {scores.worker_ranking.filter(row => row.score > 0).length === 0 && <p>아직 점수를 받은 작업자가 없습니다.</p>}
+    {scores.worker_ranking.filter(row => row.score > 0).map((row, index) => <div key={index} className="flex items-center justify-between border-b border-line py-4 last:border-0"><b>{row.name}</b><strong className="text-brand-primary">{row.score}점</strong></div>)}
+  </Panel></Screen>;
   const participation = scores.streaks.find((streak) => streak.kind === 'participation');
   return (
     <Screen title="내 기록">
