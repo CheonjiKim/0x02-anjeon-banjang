@@ -132,7 +132,7 @@ def test_extract_bad_shape_raises():
 def test_prompts_are_files_with_v0_header(monkeypatch):
     monkeypatch.delenv('BANJANG_PROMPTS', raising=False)
     for name in ['extract', 'judge', 'verify']:
-        assert (prompt_dir() / f'{name}.md').read_text().startswith('<!-- v0 초안 — 사용자 검토 전')
+        assert (prompt_dir() / f'{name}.md').read_text(encoding='utf-8').startswith('<!-- v0 초안 — 사용자 검토 전')
     text = load_prompt('judge', item='소화기 비치', photo_hint='소화기')
     assert '소화기 비치' in text and '점검 완료' in text
     assert '{item}' not in text and '<!--' not in text
