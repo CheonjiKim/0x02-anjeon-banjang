@@ -6,12 +6,15 @@ const CONDITION_LABELS = {
   work: '작업 종류', height: '작업 높이', flammable: '주변 가연물',
   ventilation: '환기 상태', nearby_people: '주변 인원', place: '작업 장소',
 };
+const SUPPORTED_WORK = ['용접·용단', '절단·원형톱', '도장·방수', '사다리·말비계'];
+const UNSUPPORTED_WORK_MESSAGE = '현재는 지원하지 않는 작업 종류입니다. 추후 지원될 예정입니다.';
 
 export default function Review() {
   const [forms, setForms] = useState([]);
   const [items, setItems] = useState([]);
   const [task, setTask] = useState(null);
   const [message, setMessage] = useState('');
+  const [dirty, setDirty] = useState(false);
   const taskId = localStorage.getItem('banjang.taskId');
 
   async function load() {
@@ -22,30 +25,38 @@ export default function Review() {
     setForms(savedForms);
     setItems(savedTask.checklist);
     setTask(savedTask);
+    setDirty(false);
   }
 
   useEffect(() => { load().catch(error => setMessage(error.message)); }, []);
 
   function updateCondition(key, value) {
     setTask(current => ({ ...current, conditions: { ...current.conditions, [key]: value } }));
+    setDirty(true);
   }
 
   async function correctConditions() {
-    const defaults = {
-      work: '용접·용단', height: '2층', flammable: '합판',
-      ventilation: '양호', nearby_people: '없음', place: '실내',
-    };
-    const values = Object.fromEntries(Object.entries(task.conditions).map(([key, value]) => [
-      key, value === '알 수 없음' ? defaults[key] : value,
-    ]));
+    const values = { ...task.conditions };
+    const work = values.work.trim();
+    values.work = { '용접': '용접·용단', '용단': '용접·용단' }[work] || work;
+    if (values.work !== '알 수 없음' && !SUPPORTED_WORK.includes(values.work)) {
+      window.alert(UNSUPPORTED_WORK_MESSAGE);
+      return;
+    }
     try {
       const updated = await api('/tasks/' + taskId + '/conditions', {
         method: 'PATCH', body: JSON.stringify(values),
       });
       setTask(updated);
       setItems(updated.checklist);
-      setMessage('조건을 반영하고 체크리스트를 다시 생성했습니다.');
-    } catch (error) { setMessage(error.message); }
+      setDirty(false);
+      setMessage(updated.review_status === 'ready'
+        ? '조건을 반영하고 체크리스트를 다시 생성했습니다. 검토 기록을 저장해 주세요.'
+        : '조건을 저장했습니다. 미확인 필수 조건을 확인해 주세요.');
+    } catch (error) {
+      if (error.status === 422 && error.message === UNSUPPORTED_WORK_MESSAGE) window.alert(error.message);
+      else setMessage(error.message);
+    }
   }
 
   async function completeTaskReview() {
@@ -77,10 +88,9 @@ export default function Review() {
     <Screen title="관리자 검토">
       <Panel>
         <p className="text-sm text-ink-sub">작업 원문과 AI 추출 조건을 대조합니다. 불확실한 조건은 관리자 확인 전까지 작업 준비를 완료하지 않습니다.</p>
-        {task?.review_status === 'pending' && (
+        {(task?.review_status === 'pending' || task?.review_status === 'ready') && (
           <div className="mt-3 rounded-xl bg-warn-soft p-3">
-            <StatusBadge kind="uncertain" />
-            <p className="mt-2">{task.review_reason}</p>
+            {task.review_status === 'pending' && <><StatusBadge kind="uncertain" /><p className="mt-2">{task.review_reason}</p></>}
             <p className="mt-2"><b>작업 원문</b>: {task.text}</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               {Object.entries(task.conditions).map(([key, value]) => (
@@ -95,7 +105,7 @@ export default function Review() {
               ))}
             </div>
             <AppButton className="mt-3 w-full" onClick={correctConditions}>조건 수정 후 체크리스트 재생성</AppButton>
-            <AppButton className="mt-2 w-full" onClick={completeTaskReview}>검토 기록 저장</AppButton>
+            <AppButton className="mt-2 w-full" disabled={task.review_status !== 'ready' || dirty} onClick={completeTaskReview}>검토 기록 저장</AppButton>
           </div>
         )}
         {task?.review_action && <p className="mt-3 text-sm">저장된 조치: {task.review_action} · {task.review_note}</p>}
