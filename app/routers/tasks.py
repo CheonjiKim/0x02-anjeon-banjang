@@ -8,7 +8,8 @@ from pydantic import BaseModel, Field
 
 from app.db import get_db
 from app.pipeline.risk import build_risk_assessment
-from app.schemas import ChecklistItem, Conditions, ConditionsPatch, QuestionOut, TaskIn, TaskOut
+from app.pipeline.rules import WORK_TYPES
+from app.schemas import UNKNOWN, ChecklistItem, Conditions, ConditionsPatch, QuestionOut, TaskIn, TaskOut
 from app.workflows import CONDITION_QUESTIONS, QUESTION_OPTIONS, run_task
 
 
@@ -110,6 +111,12 @@ def patch_conditions(task_id: int, payload: ConditionsPatch, conn: sqlite3.Conne
     patch = payload.model_dump(exclude_none=True)
     if not patch:
         return task
+    if 'work' in patch:
+        work = patch['work'].strip()
+        work = {'용접': '용접·용단', '용단': '용접·용단'}.get(work, work)
+        if work not in WORK_TYPES and work != UNKNOWN:
+            raise HTTPException(status_code=422, detail='현재는 지원하지 않는 작업 종류입니다. 추후 지원될 예정입니다.')
+        patch['work'] = work
     pinned.update(patch)
     result = run_task(task.text, site_id=conn.execute('SELECT site_id FROM tasks WHERE id = ?', (task_id,)).fetchone()['site_id'],
                       pinned=pinned)
