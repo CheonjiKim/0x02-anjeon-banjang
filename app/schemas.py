@@ -46,7 +46,7 @@ class ConditionsPatch(BaseModel):
 class TaskIn(BaseModel):
     text: str
     site_id: int = 1
-    worker_id: int = 1
+    worker_id: int | None = 1
     close_requested: bool = Field(True, exclude=True)
     scenario: str | None = Field(None, exclude=True)
 
@@ -79,6 +79,9 @@ class ChecklistItem(BaseModel):
 
 
 class TaskOut(BaseModel):
+    worker_id: int | None = None
+    worker_name: str = ""
+    created_at: str = ""
     id: int
     text: str
     conditions: Conditions
