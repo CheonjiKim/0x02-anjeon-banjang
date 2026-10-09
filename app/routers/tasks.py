@@ -1,0 +1,104 @@
+"""작업 입력, 조건 보정, 체크리스트 API다."""
+
+import json
+import sqlite3
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from app.db import get_db
+from app.pipeline.risk import build_risk_assessment
+from app.schemas import ChecklistItem, Conditions, ConditionsPatch, QuestionOut, TaskIn, TaskOut
+from app.workflows import CONDITION_QUESTIONS, QUESTION_OPTIONS, run_task
+
+
+router = APIRouter(prefix='/api/tasks', tags=['tasks'])
+
+
+def _checklist(conn: sqlite3.Connection, task_id: int) -> list[ChecklistItem]:
+    rows = conn.execute('SELECT * FROM checklist_items WHERE task_id = ? ORDER BY id', (task_id,)).fetchall()
+    return [ChecklistItem(code=row['code'], title=row['title'], source=row['source'], level=row['level'],
+                          note=row['note'], resolved=bool(row['resolved'])) for row in rows]
+
+
+def load_task(conn: sqlite3.Connection, task_id: int) -> TaskOut:
+    row = conn.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail='작업을 찾을 수 없어요')
+    return TaskOut(id=row['id'], text=row['text'], conditions=Conditions(**json.loads(row['conditions'])),
+                   checklist=_checklist(conn, task_id), run_id=row['run_id'])
+
+
+def _pinned(conn: sqlite3.Connection, task_id: int) -> dict[str, str]:
+    row = conn.execute('SELECT pinned FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    return json.loads(row['pinned'] or '{}') if row else {}
+
+
+def _store_checklist(conn: sqlite3.Connection, task_id: int, items: list[ChecklistItem]) -> None:
+    resolved = {row['code']: row['resolved'] for row in conn.execute(
+        'SELECT code, resolved FROM checklist_items WHERE task_id = ?', (task_id,)
+    )}
+    conn.execute('DELETE FROM checklist_items WHERE task_id = ?', (task_id,))
+    conn.executemany(
+        'INSERT INTO checklist_items(task_id, code, title, source, level, note, resolved) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [(task_id, item.code, item.title, item.source, item.level, item.note, resolved.get(item.code, 0)) for item in items],
+    )
+
+
+@router.post('', response_model=TaskOut, status_code=status.HTTP_201_CREATED)
+def create_task(payload: TaskIn, conn: sqlite3.Connection = Depends(get_db)):
+    result = run_task(payload.text, site_id=payload.site_id, worker_id=payload.worker_id)
+    cursor = conn.execute(
+        'INSERT INTO tasks(site_id, worker_id, text, conditions, pinned, run_id) VALUES (?, ?, ?, ?, ?, ?)',
+        (payload.site_id, payload.worker_id, payload.text, result.conditions.model_dump_json(), '{}', result.run_id),
+    )
+    _store_checklist(conn, cursor.lastrowid, result.checklist)
+    return load_task(conn, cursor.lastrowid)
+
+
+@router.get('/{task_id}', response_model=TaskOut)
+def get_task(task_id: int, conn: sqlite3.Connection = Depends(get_db)):
+    return load_task(conn, task_id)
+
+
+@router.get('/{task_id}/checklist', response_model=list[ChecklistItem])
+def checklist(task_id: int, conn: sqlite3.Connection = Depends(get_db)):
+    load_task(conn, task_id)
+    return _checklist(conn, task_id)
+
+
+@router.get('/{task_id}/risk')
+def risk(task_id: int, conn: sqlite3.Connection = Depends(get_db)):
+    return build_risk_assessment(load_task(conn, task_id).conditions)
+
+
+@router.get('/{task_id}/questions', response_model=list[QuestionOut])
+def questions(task_id: int, conn: sqlite3.Connection = Depends(get_db)):
+    task = load_task(conn, task_id)
+    result = run_task(task.text, pinned=_pinned(conn, task_id))
+    return [QuestionOut(key=key, text=CONDITION_QUESTIONS[key], options=QUESTION_OPTIONS.get(key, []))
+            for key in result.assumed_required]
+
+
+@router.patch('/{task_id}/conditions', response_model=TaskOut)
+def patch_conditions(task_id: int, payload: ConditionsPatch, conn: sqlite3.Connection = Depends(get_db)):
+    task = load_task(conn, task_id)
+    pinned = _pinned(conn, task_id)
+    patch = payload.model_dump(exclude_none=True)
+    if not patch:
+        return task
+    pinned.update(patch)
+    result = run_task(task.text, site_id=conn.execute('SELECT site_id FROM tasks WHERE id = ?', (task_id,)).fetchone()['site_id'],
+                      pinned=pinned)
+    conn.execute('UPDATE tasks SET conditions = ?, pinned = ?, run_id = ? WHERE id = ?',
+                 (result.conditions.model_dump_json(), json.dumps(pinned, ensure_ascii=False), result.run_id, task_id))
+    _store_checklist(conn, task_id, result.checklist)
+    return load_task(conn, task_id)
+
+
+@router.post('/{task_id}/items/{code}/resolve', response_model=TaskOut)
+def resolve_item(task_id: int, code: str, conn: sqlite3.Connection = Depends(get_db)):
+    load_task(conn, task_id)
+    cursor = conn.execute('UPDATE checklist_items SET resolved = 1 WHERE task_id = ? AND code = ?', (task_id, code))
+    if cursor.rowcount == 0:
+        raise HTTPException(status_code=404, detail='작업 또는 항목을 찾을 수 없어요')
+    return load_task(conn, task_id)
