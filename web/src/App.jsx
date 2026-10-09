@@ -55,9 +55,9 @@ export default function App() {
 
   return (
     <>
-      {user && location.pathname !== '/login' && <SessionHeader user={user} onClockOut={clockOut} />}
+      {user && location.pathname !== '/login' && location.pathname !== '/' && <SessionHeader user={user} onClockOut={clockOut} />}
       <Routes>
-        <Route path="/" element={<RequireSession user={user} role="admin"><TaskInput /></RequireSession>} />
+        <Route path="/" element={<RequireSession user={user} role="admin"><TaskInput onClockOut={clockOut} /></RequireSession>} />
         <Route path="/checklist" element={<RequireSession user={user} role="admin"><Checklist /></RequireSession>} />
         <Route path="/todo" element={<RequireSession user={user} role="admin"><Todo /></RequireSession>} />
         <Route path="/evidence" element={<RequireSession user={user} role="admin"><Evidence /></RequireSession>} />

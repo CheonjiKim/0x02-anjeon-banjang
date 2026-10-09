@@ -1,6 +1,7 @@
 """작업 문장을 고정된 순서로 조건·점검 항목·위험성평가로 바꾼다."""
 
 from app.llm import ExtractOut, LLMError, MockClient, get_client
+from app.pipeline.extract import extract_with_spans
 from app.pipeline.normalize import normalize
 from app.pipeline.risk import build_risk_assessment
 from app.pipeline.rules import build_checklist
@@ -36,10 +37,14 @@ def run_task(text: str, *, site_id: int = 1, worker_id: int = 1,
                 raw = client.extract(text, step=step)
             except LLMError as exc:
                 step.meta['failure'] = str(exc)
-                raw = ExtractOut(conditions=Conditions(), evidence={})
+                conditions, evidence = extract_with_spans(text)
+                raw = ExtractOut(conditions=conditions, evidence=evidence)
+                step.meta['fallback'] = 'keyword'
             except Exception as exc:
                 step.meta['failure'] = f'{type(exc).__name__}: {exc}'
-                raw = ExtractOut(conditions=Conditions(), evidence={})
+                conditions, evidence = extract_with_spans(text)
+                raw = ExtractOut(conditions=conditions, evidence=evidence)
+                step.meta['fallback'] = 'keyword'
             step.output = raw.model_dump()
         with trace.step('normalize', conditions=raw.conditions, evidence=raw.evidence) as step:
             conditions, dropped = normalize(raw.conditions, raw.evidence, text)

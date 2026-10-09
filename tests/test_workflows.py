@@ -73,15 +73,28 @@ def test_tbm_clean_when_all_said():
     assert run_tbm(points, task.checklist).missing == []
 
 
-def test_extract_failure_keeps_conditions_unknown_when_llm_unavailable(monkeypatch):
+def test_extract_failure_uses_explicit_keyword_fallback_when_llm_unavailable(monkeypatch):
     monkeypatch.setenv('BANJANG_LLM', 'openai')
     for key in ['OPENAI_API_KEY', 'BANJANG_MODEL_EXTRACT', 'BANJANG_MODEL_JUDGE']:
         monkeypatch.delenv(key, raising=False)
     result = run_task(DEMO)
-    assert all(value == UNKNOWN for value in result.conditions.model_dump().values())
-    assert set(result.assumed_required) == set(result.conditions.model_dump())
+    assert result.conditions.work == '용접·용단'
+    assert result.conditions.height == '2층'
+    assert result.conditions.flammable == '합판'
+    assert set(result.assumed_required) == {'ventilation', 'nearby_people', 'place'}
     assert 'failure' in read_traces()[-1]['steps'][0]['meta']
-    assert 'fallback' not in read_traces()[-1]['steps'][0]['meta']
+    assert read_traces()[-1]['steps'][0]['meta']['fallback'] == 'keyword'
+
+
+def test_keyword_fallback_recognizes_welding_in_a_short_work_order(monkeypatch):
+    monkeypatch.setenv('BANJANG_LLM', 'openai')
+    for key in ['OPENAI_API_KEY', 'BANJANG_MODEL_EXTRACT', 'BANJANG_MODEL_JUDGE']:
+        monkeypatch.delenv(key, raising=False)
+    result = run_task('각파이프 용접해야 합니다')
+    assert result.conditions.work == '용접·용단'
+    assert set(result.conditions.unknown_keys()) == {
+        'height', 'flammable', 'ventilation', 'nearby_people', 'place',
+    }
 
 
 def test_question_options_match_the_foreman_patch_contract():
