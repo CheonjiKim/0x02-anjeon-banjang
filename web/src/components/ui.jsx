@@ -72,12 +72,13 @@ export function BackButton({ onClick }) {
   );
 }
 
-export function Screen({ title, left, tabbar = true, children }) {
+export function Screen({ title, left, right, tabbar = true, children }) {
   return (
     <Page className={`app-bg ${tabbar ? 'pb-safe-24' : 'pb-safe-8'}`}>
       <header className="relative flex h-16 items-center justify-center px-[22px]">
         {left && <div className="absolute left-[22px]">{left}</div>}
         <h1 className="text-xl font-extrabold text-ink">{title}</h1>
+        {right && <div className="absolute right-[22px]">{right}</div>}
       </header>
       {children}
       <LegalNote />

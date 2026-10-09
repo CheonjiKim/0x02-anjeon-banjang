@@ -6,12 +6,17 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from dotenv import load_dotenv
 
 from app.db import init_db
 from app.routers import auth, eval as eval_router, evidence, misc, tasks, transcription
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# Local development settings are kept out of Git in .env.  Explicit terminal
+# environment variables still take precedence, which is useful for deployment.
+load_dotenv(ROOT / '.env', override=False)
 
 
 def create_app(db_path: str | None = None, upload_dir: str | None = None) -> FastAPI:
