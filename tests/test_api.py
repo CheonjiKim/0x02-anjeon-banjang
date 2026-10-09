@@ -90,3 +90,13 @@ def test_resolve_removes_todo_without_points(client):
     assert client.post(f"/api/tasks/{task['id']}/items/extinguisher/resolve").status_code == 200
     assert client.get('/api/todos', params={'task_id': task['id']}).json() == []
     assert client.get('/api/scores').json()['total'] == 0
+
+
+def test_login_returns_role_for_seed_accounts(client):
+    admin = client.post('/api/login', json={'login_id': 'admin', 'password': '1234'})
+    worker = client.post('/api/login', json={'login_id': 'worker', 'password': '1234'})
+    invalid = client.post('/api/login', json={'login_id': 'worker', 'password': 'wrong'})
+    assert admin.status_code == worker.status_code == 200
+    assert admin.json()['role'] == 'admin'
+    assert worker.json()['role'] == 'worker'
+    assert invalid.status_code == 401

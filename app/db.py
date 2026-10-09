@@ -22,6 +22,14 @@ CREATE TABLE IF NOT EXISTS workers (
     team TEXT,
     is_foreman INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    login_id TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    role TEXT NOT NULL CHECK(role IN ('admin', 'worker')),
+    name TEXT NOT NULL,
+    team TEXT
+);
 CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY,
     site_id INTEGER NOT NULL REFERENCES sites(id),
@@ -112,6 +120,11 @@ def init_db(path: str | Path) -> None:
             conn.executemany(
                 'INSERT INTO workers(site_id, name, team, is_foreman) VALUES (?, ?, ?, ?)',
                 [(1, '반장', '우리 팀', 1), (1, '김OO', '우리 팀', 0), (1, '박OO', '철골 1팀', 0)],
+            )
+        if conn.execute('SELECT COUNT(*) FROM users').fetchone()[0] == 0:
+            conn.executemany(
+                'INSERT INTO users(login_id, password, role, name, team) VALUES (?, ?, ?, ?, ?)',
+                [('admin', '1234', 'admin', '김반장', '우리 팀'), ('worker', '1234', 'worker', '김작업', '우리 팀')],
             )
         conn.commit()
 
