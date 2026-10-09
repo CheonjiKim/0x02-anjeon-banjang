@@ -55,7 +55,7 @@ export default function App() {
 
   return (
     <>
-      {user && location.pathname !== '/login' && location.pathname !== '/' && <SessionHeader user={user} onClockOut={clockOut} />}
+      {user && location.pathname !== '/login' && location.pathname !== '/' && !location.pathname.startsWith('/worker/') && <SessionHeader user={user} onClockOut={clockOut} />}
       <Routes>
         <Route path="/" element={<RequireSession user={user} role="admin"><TaskInput onClockOut={clockOut} /></RequireSession>} />
         <Route path="/checklist" element={<RequireSession user={user} role="admin"><Checklist /></RequireSession>} />
@@ -63,7 +63,7 @@ export default function App() {
         <Route path="/evidence" element={<RequireSession user={user} role="admin"><Evidence /></RequireSession>} />
         <Route path="/ranking" element={<RequireSession user={user} role="admin"><Ranking /></RequireSession>} />
         <Route path="/eval" element={<RequireSession user={user} role="admin"><Eval /></RequireSession>} />
-        <Route path="/worker/:taskId" element={<RequireSession user={user} role="worker"><WorkerForm /></RequireSession>} />
+        <Route path="/worker/:taskId" element={<RequireSession user={user} role="worker"><WorkerForm onClockOut={clockOut} /></RequireSession>} />
         <Route path="/tbm" element={<RequireSession user={user} role="admin"><Tbm /></RequireSession>} />
         <Route path="/incidents" element={<RequireSession user={user} role="admin"><Incidents /></RequireSession>} />
         <Route path="/reviews" element={<RequireSession user={user} role="admin"><Review /></RequireSession>} />

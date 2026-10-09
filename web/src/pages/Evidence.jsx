@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Camera, Check, ChevronDown, RefreshCw, Search, ShieldCheck } from 'lucide-react';
 import { api, post } from '../lib/api.js';
 import { AppButton, EmptyState, Panel, Screen, StatusBadge } from '../components/ui.jsx';
@@ -14,6 +14,7 @@ export default function Evidence() {
   const [queue, setQueue] = useState([]);
   const [selectedCode, setSelectedCode] = useState('');
   const [photo, setPhoto] = useState(null);
+  const photoInputRef = useRef(null);
   const [useMock, setUseMock] = useState(false);
   const [scenario, setScenario] = useState('verify_reject');
   const [pending, setPending] = useState(false);
@@ -69,9 +70,13 @@ export default function Evidence() {
             </select>
           </label>
           {selected && <p className="mt-2 text-sm text-ink-sub">사진에는 “{selected.title}” 조치가 실제로 보여야 합니다.</p>}
-          <label className="mt-4 block text-sm font-bold">사진
-            <input aria-label="증빙 사진" type="file" accept="image/*" required onChange={(event) => setPhoto(event.target.files?.[0] || null)} className="mt-2 block w-full text-sm" />
-          </label>
+          <div className="mt-4">
+            <p className="text-sm font-bold">사진</p>
+            <input ref={photoInputRef} aria-label="증빙 사진" type="file" accept="image/*" required onChange={(event) => setPhoto(event.target.files?.[0] || null)} className="sr-only" />
+            <button type="button" onClick={() => photoInputRef.current?.click()} className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-white px-4 text-sm font-bold text-ink">
+              <Camera size={18} aria-hidden="true" />{photo ? photo.name : '사진 첨부하기'}
+            </button>
+          </div>
           <details className="mt-4 rounded-xl bg-gray-100 p-3 text-sm">
             <summary className="flex cursor-pointer items-center gap-2 font-bold"><ChevronDown size={16} />개발용 mock 실패 재현</summary>
             <label className="mt-3 flex items-center gap-2"><input type="checkbox" checked={useMock} onChange={(event) => setUseMock(event.target.checked)} />시연용 mock 결과 사용</label>
