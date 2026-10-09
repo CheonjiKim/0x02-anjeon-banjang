@@ -194,6 +194,16 @@ class TbmOut(BaseModel):
     run_id: str | None = None
 
 
+class TbmLatestOut(BaseModel):
+    id: int
+    task_id: int
+    transcript: str = ''
+    memo: str = ''
+    attendees: str = ''
+    missing: list[ChecklistItem] = Field(default_factory=list)
+    created_at: str | None = None
+
+
 class WorkerFormIn(BaseModel):
     task_id: int
     understood: bool = True
