@@ -18,6 +18,14 @@ def get_client() -> LLMClient:
     raise LLMError(f"BANJANG_LLM 값을 모르겠어요: '{kind}' (mock 또는 openai)")
 
 
+def vision_mode() -> str:
+    """Return configured photo mode without constructing a client or calling APIs."""
+    kind = os.environ.get('BANJANG_VISION', '').strip().lower()
+    if not kind or kind == 'default':
+        kind = os.environ.get('BANJANG_LLM', 'mock').strip().lower() or 'mock'
+    return kind if kind in {'mock', 'openai'} else 'unavailable'
+
+
 def get_vision_client() -> LLMClient:
     """사진 판정 전용 클라이언트. 기본은 기존 mock/LLM 설정을 따른다.
 

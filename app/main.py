@@ -35,6 +35,11 @@ def create_app(db_path: str | None = None, upload_dir: str | None = None) -> Fas
     def health():
         return {'ok': True}
 
+    @app.get('/api/runtime')
+    def runtime():
+        from app.llm import vision_mode
+        return {'vision_mode': vision_mode()}
+
     app.include_router(tasks.router)
     app.include_router(evidence.router)
     app.include_router(transcription.router)

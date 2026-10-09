@@ -49,7 +49,7 @@ async def create_evidence(
     row = conn.execute('SELECT site_id, worker_id FROM tasks WHERE id = ?', (task_id,)).fetchone()
     points = award_evidence(conn, site_id=row['site_id'], task_id=task_id, item_code=item_code,
                             result=result.judgement.result, worker_id=worker_id or row['worker_id'] or 1)
-    return EvidenceOut(id=cursor.lastrowid, task_id=task_id, item_code=item_code, points=points,
+    return EvidenceOut(mode=result.mode, id=cursor.lastrowid, task_id=task_id, item_code=item_code, points=points,
                        run_id=result.run_id, first_result=result.first.result, verified=result.verified,
                        **result.judgement.model_dump())
 

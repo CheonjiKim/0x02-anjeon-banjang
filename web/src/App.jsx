@@ -66,8 +66,9 @@ export default function App() {
   }
 
   return (
-    <>
+    <div className="flex h-dvh flex-col">
       {user && location.pathname !== '/login' && location.pathname !== '/' && <SessionHeader user={user} onClockOut={clockOut} />}
+      <div className="relative min-h-0 flex-1 overflow-auto">
       <Routes>
         <Route path="/" element={<RequireSession user={user} role="admin"><TaskInput onClockOut={clockOut} /></RequireSession>} />
         <Route path="/checklist" element={<RequireSession user={user} role="admin"><Checklist /></RequireSession>} />
@@ -87,6 +88,7 @@ export default function App() {
         <Route path="/login" element={<LoginSample onLogin={login} />} />
         <Route path="*" element={<Navigate to={user ? (user.role === 'worker' ? '/worker/task' : '/') : '/login'} replace />} />
       </Routes>
+      </div>
       {!standalone && user && (
         <nav aria-label="주 메뉴" className="fixed inset-x-0 bottom-0 z-30 rounded-t-[28px] bg-white pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
           <div className="grid h-[68px] grid-cols-5">
@@ -112,6 +114,6 @@ export default function App() {
           </div>
         </nav>
       )}
-    </>
+    </div>
   );
 }
