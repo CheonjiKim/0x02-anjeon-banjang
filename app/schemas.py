@@ -212,9 +212,9 @@ class TbmLatestOut(BaseModel):
 
 class WorkerFormIn(BaseModel):
     task_id: int
-    understood: bool = True
+    understood: bool | None = None
     risk_note: str = ''
-    ppe_worn: bool
+    ppe_worn: bool | None = None
     report_text: str = ''
     worker_id: int = 2
 
@@ -222,6 +222,8 @@ class WorkerFormIn(BaseModel):
 class WorkerFormOut(BaseModel):
     id: int
     task_id: int
+    understood: bool | None = None
+    ppe_worn: bool | None = None
     report_text: str = ''
     risk_note: str = ''
     photo_url: str | None = None
