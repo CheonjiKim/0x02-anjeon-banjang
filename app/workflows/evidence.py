@@ -2,6 +2,7 @@
 
 from app.llm import JudgeOut, MockClient, VerifyOut, get_vision_client, vision_mode
 from app.pipeline.rules import photo_hint
+from app.pipeline.photo_quality import is_extremely_dark
 from app.schemas import ChecklistItem, EvidenceResult, Judgement, TodoCard
 from app.tracing import trace_run
 
@@ -22,7 +23,12 @@ def run_evidence(item: ChecklistItem, photo: bytes, *, forced: str | None = None
             try:
                 client = MockClient(forced=forced, scenario=scenario) if forced is not None or scenario is not None else get_vision_client()
                 step.meta['llm'] = client.name
-                first = Judgement(**client.judge(item.title, hint, photo, step=step).model_dump())
+                if mode != 'mock' and is_extremely_dark(photo):
+                    step.meta['quality_block'] = 'extremely_dark'
+                    first = Judgement(result='uncertain', observed='사진 전체가 너무 어두워 조치 상태를 확인할 수 없어요',
+                                      retake_hint='안전한 위치에서 조명을 확보해 다시 촬영하거나 관리자에게 현장 확인을 요청해 주세요')
+                else:
+                    first = Judgement(**client.judge(item.title, hint, photo, step=step).model_dump())
             except Exception as exc:
                 step.meta['failure'] = f'{type(exc).__name__}: {exc}'
                 client = None
