@@ -63,6 +63,7 @@ def test_verify_rejection_becomes_uncertain_without_points(client):
     assert response.json()['first_result'] == 'confirmed'
     assert response.json()['verified'] is False
     assert client.get('/api/scores').json()['total'] == 0
+    task_status = client.get(f"/api/tasks/{task['id']}").json()['review_status']
     evidence_id = response.json()['id']
     reviewed = client.post(f'/api/evidence/{evidence_id}/reviews', json={
         'action': 'retake_requested', 'reason': '사진에 보호구가 분명히 보이지 않습니다.'
@@ -71,6 +72,23 @@ def test_verify_rejection_becomes_uncertain_without_points(client):
     assert client.get(f'/api/evidence/{evidence_id}/reviews').json()[0]['reason'] == '사진에 보호구가 분명히 보이지 않습니다.'
     assert client.get('/api/evidence/review-queue').json()[0]['id'] == evidence_id
     assert client.get('/api/scores').json()['total'] == 0
+    assert client.get(f"/api/tasks/{task['id']}").json()['review_status'] == task_status
+
+
+def test_photo_review_does_not_clear_pending_task_condition_review(client):
+    task = client.post('/api/tasks', json={'text': '현장 작업 지시 원문', 'scenario': 'extract_fail'}).json()
+    response = client.post('/api/evidence', data={
+        'task_id': str(task['id']), 'item_code': 'fire-watch', 'scenario': 'judge_fail',
+    }, files={'photo': ('a.jpg', b'fake', 'image/jpeg')})
+    assert response.status_code == 201 and response.json()['result'] == 'uncertain'
+    assert client.get(f"/api/tasks/{task['id']}").json()['review_status'] == 'pending'
+    reviewed = client.post(f"/api/evidence/{response.json()['id']}/reviews", json={
+        'action': 'confirmed_by_manager', 'reason': '사진과 실제 조치를 대조했습니다.'
+    })
+    assert reviewed.status_code == 201
+    saved = client.get(f"/api/tasks/{task['id']}").json()
+    assert saved['review_status'] == 'pending'
+    assert saved['conditions']['work'] == '알 수 없음'
 
 
 @pytest.mark.parametrize('scenario', ['judge_fail', 'judge_timeout', 'judge_invalid', 'verify_empty'])

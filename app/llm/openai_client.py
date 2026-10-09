@@ -62,15 +62,15 @@ VERIFY_SCHEMA = {
 class OpenAIClient:
     name = 'openai'
 
-    def __init__(self, *, api_key=None, model_extract=None, model_judge=None, timeout=20.0, http: httpx.Client | None = None):
+    def __init__(self, *, api_key=None, model_extract=None, model_judge=None, timeout=20.0,
+                 http: httpx.Client | None = None, require_extract: bool = True):
         self.api_key = api_key if api_key is not None else os.environ.get('OPENAI_API_KEY', '')
         self.model_extract = model_extract if model_extract is not None else os.environ.get('BANJANG_MODEL_EXTRACT', '')
         self.model_judge = model_judge if model_judge is not None else os.environ.get('BANJANG_MODEL_JUDGE', '')
-        missing = [key for key, value in [
-            ('OPENAI_API_KEY', self.api_key),
-            ('BANJANG_MODEL_EXTRACT', self.model_extract),
-            ('BANJANG_MODEL_JUDGE', self.model_judge),
-        ] if not value.strip()]
+        required = [('OPENAI_API_KEY', self.api_key), ('BANJANG_MODEL_JUDGE', self.model_judge)]
+        if require_extract:
+            required.append(('BANJANG_MODEL_EXTRACT', self.model_extract))
+        missing = [key for key, value in required if not value.strip()]
         if missing:
             raise LLMError(f"설정이 비어 있어요: {', '.join(missing)}")
         self.timeout = timeout
