@@ -10,7 +10,8 @@ const CONDITION_LABELS = {
 };
 
 export default function Checklist() {
-  const [task, setTask] = useState(useLocation().state?.task || null);
+  const location = useLocation();
+  const [task, setTask] = useState(location.state?.task || null);
   const [risks, setRisks] = useState([]);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export default function Checklist() {
   useEffect(() => {
     const id = localStorage.getItem('banjang.taskId');
     if (!id) return;
-    Promise.all([task ? Promise.resolve(task) : api('/tasks/' + id), api('/tasks/' + id + '/risk')])
+    Promise.all([api('/tasks/' + id), api('/tasks/' + id + '/risk')])
       .then(([loadedTask, loadedRisks]) => {
         setTask(loadedTask);
         setRisks(loadedRisks);
@@ -27,12 +28,14 @@ export default function Checklist() {
   }, []);
 
   if (!task) {
-    return <Screen title="체크리스트"><Panel>{error || '작업을 먼저 입력해 주세요.'}</Panel></Screen>;
+    return <Screen title="체크리스트"><Panel><p>{error || '작업을 먼저 입력해 주세요.'}</p><AppButton className="mt-4 w-full" onClick={() => navigate('/')}>작업 화면으로 이동</AppButton></Panel></Screen>;
   }
 
   const unknown = Object.entries(task.conditions).filter(([, value]) => value === '알 수 없음');
   return (
     <Screen title="안전 체크리스트">
+      {error && <Panel className="mb-4"><p role="alert" className="text-danger">최신 체크리스트를 불러오지 못했습니다: {error}</p><AppButton outline className="mt-3 w-full" onClick={() => window.location.reload()}>다시 불러오기</AppButton></Panel>}
+      {location.state?.reviewCompleted && <Panel className="mb-4 bg-ok-soft"><p className="font-bold text-ok">관리자 조건 검토 기록을 저장했습니다.</p><p className="mt-1 text-sm">이제 체크리스트 초안을 읽고 현장 조치를 확인해 주세요. 작업 승인은 아닙니다.</p></Panel>}
       <Panel>
         <p className="text-sm text-ink-sub">오늘 작업</p>
         <p className="mt-1 font-bold">{task.text}</p>
@@ -45,6 +48,7 @@ export default function Checklist() {
         </div>
         <p className="mt-3 text-sm text-ink-sub">조건 추출: {task.extraction_method === 'mock' ? '시연용 키워드 추출' : task.extraction_method} · 규칙 버전: {task.rule_version} · 관리자 수정: {task.condition_changes?.length ? '있음' : '없음'}</p>
         {unknown.length > 0 && <div className="mt-4 text-sm text-warn"><p className="flex gap-2"><TriangleAlert size={18} />정보 없음은 현장에서 확인해야 합니다. 실제 ‘없음’으로 확정하지 않았습니다.</p><p className="mt-2">확인할 조건: {unknown.map(([key]) => CONDITION_LABELS[key]).join(', ')}</p><AppButton outline className="mt-3 w-full" onClick={() => navigate('/reviews')}>현장 조건 확인·수정</AppButton></div>}
+        {unknown.length === 0 && <AppButton outline className="mt-4 w-full" onClick={() => navigate('/reviews')}>조건 다시 확인·수정</AppButton>}
       </Panel>
 
       <Panel className="mt-4">
