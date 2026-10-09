@@ -41,7 +41,9 @@ def worker_ranking(
     ranking = []
     for row in _rows(conn, 'worker_id', site_id):
         worker_id = row['worker_id']
-        worker = conn.execute('SELECT name FROM workers WHERE id = ?', (worker_id,)).fetchone()
+        worker = conn.execute('SELECT name, is_foreman FROM workers WHERE id = ?', (worker_id,)).fetchone()
+        if worker and worker['is_foreman']:
+            continue
         ranking.append(RankRow(
             name=worker['name'] if worker else f'#{worker_id}',
             score=row['score'], me=worker_id == my_worker_id,
