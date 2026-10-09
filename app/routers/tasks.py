@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from app.db import get_db
 from app.pipeline.risk import build_risk_assessment
 from app.pipeline.rules import WORK_TYPES
+from app.pipeline.normalize import FLAMMABLES, PLACES
 from app.schemas import UNKNOWN, ChecklistItem, Conditions, ConditionsPatch, QuestionOut, TaskIn, TaskOut
 from app.workflows import CONDITION_QUESTIONS, QUESTION_OPTIONS, run_task
 
@@ -127,6 +128,26 @@ def patch_conditions(task_id: int, payload: ConditionsPatch, conn: sqlite3.Conne
         patch['ventilation'] = '불량'
     if 'nearby_people' in patch:
         patch['nearby_people'] = re.sub(r'^(\d+)\s*인$', r'\1명', patch['nearby_people'])
+        patch['nearby_people'] = re.sub(r'^(?:일반인|작업자|사람|인원)\s*(\d+)\s*명$', r'\1명', patch['nearby_people'])
+    allowed_values = {
+        'height': lambda value: re.fullmatch(r'\d+(?:\.\d+)?m|지상', value) is not None,
+        'floor': lambda value: re.fullmatch(r'\d+층', value) is not None,
+        'flammable': lambda value: value in FLAMMABLES,
+        'ventilation': lambda value: value in {'양호', '불량'},
+        'nearby_people': lambda value: re.fullmatch(r'\d+명|있음|없음', value) is not None,
+        'place': lambda value: value in PLACES,
+    }
+    hints = {
+        'height': '실제 작업 높이는 2m처럼 입력해 주세요. 층수는 작업 층에 입력합니다.',
+        'floor': '작업 층은 10층처럼 입력해 주세요.',
+        'flammable': '가연물 종류 또는 없음으로 입력해 주세요.',
+        'ventilation': '환기 상태는 양호 또는 불량으로 입력해 주세요.',
+        'nearby_people': '주변 인원은 있음, 없음 또는 10명처럼 입력해 주세요.',
+        'place': '장소 유형은 실내, 외부, 지하 등으로 입력해 주세요.',
+    }
+    for key, value in patch.items():
+        if key in allowed_values and value != getattr(task.conditions, key) and value != UNKNOWN and not allowed_values[key](value):
+            raise HTTPException(status_code=422, detail=hints[key])
     lowering = {'flammable': '없음', 'ventilation': '양호', 'nearby_people': '없음', 'height': '지상'}
     changed = [(key, getattr(task.conditions, key), value) for key, value in patch.items()
                if getattr(task.conditions, key) != value]

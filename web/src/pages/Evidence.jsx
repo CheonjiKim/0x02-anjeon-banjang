@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Camera, Check, ChevronDown, RefreshCw, Search, ShieldCheck } from 'lucide-react';
 import { api, post } from '../lib/api.js';
 import { AppButton, EmptyState, Panel, Screen, StatusBadge } from '../components/ui.jsx';
@@ -10,6 +11,7 @@ const MOCK_SCENARIOS = [
 ];
 
 export default function Evidence() {
+  const navigate = useNavigate();
   const [task, setTask] = useState(null);
   const [queue, setQueue] = useState([]);
   const [selectedCode, setSelectedCode] = useState('');
@@ -56,7 +58,7 @@ export default function Evidence() {
     } catch (error) { setMessage(error.message); }
   }
 
-  if (!taskId) return <Screen title="사진 증빙"><EmptyState icon={Camera} title="먼저 작업을 등록해 주세요" hint="작업별 체크리스트 항목에 사진을 연결합니다." /></Screen>;
+  if (!taskId) return <Screen title="사진 증빙"><EmptyState icon={Camera} title="먼저 작업을 등록해 주세요" hint="작업별 체크리스트 항목에 사진을 연결합니다." action="작업 등록으로 이동" onAction={() => navigate('/')} /></Screen>;
   const selected = task?.checklist.find((item) => item.code === selectedCode);
   return (
     <Screen title="사진 증빙">
