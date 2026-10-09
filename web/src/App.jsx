@@ -10,6 +10,7 @@ import Evidence from './pages/Evidence.jsx';
 import Ranking from './pages/Ranking.jsx';
 import Eval from './pages/Eval.jsx';
 import WorkerForm from './pages/WorkerForm.jsx';
+import LoginSample from './pages/LoginSample.jsx';
 
 const tabs = [
   ['/', '작업', HardHat],
@@ -27,7 +28,7 @@ function welcomeSeen() {
 export default function App() {
   const [seen, setSeen] = useState(welcomeSeen);
   const location = useLocation();
-  const worker = location.pathname.startsWith('/worker/');
+  const standalone = location.pathname.startsWith('/worker/') || location.pathname === '/login';
 
   function start() {
     try { localStorage.setItem('banjang-welcome-seen', '1'); }
@@ -35,7 +36,7 @@ export default function App() {
     setSeen(true);
   }
 
-  if (!seen && !worker) return <Welcome onStart={start} />;
+  if (!seen && !standalone) return <Welcome onStart={start} />;
 
   return (
     <>
@@ -47,8 +48,9 @@ export default function App() {
         <Route path="/ranking" element={<Ranking />} />
         <Route path="/eval" element={<Eval />} />
         <Route path="/worker/:taskId" element={<WorkerForm />} />
+        <Route path="/login" element={<LoginSample />} />
       </Routes>
-      {!worker && (
+      {!standalone && (
         <nav aria-label="주 메뉴" className="fixed inset-x-0 bottom-0 z-30 rounded-t-[28px] bg-white pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
           <div className="grid h-[68px] grid-cols-5">
             {tabs.map(([path, label, Icon]) => (
