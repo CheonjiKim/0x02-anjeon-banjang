@@ -4,7 +4,10 @@ export async function api(path, options = {}) {
     request.headers = { ...request.headers, 'Content-Type': 'application/json' };
   }
   const response = await fetch('/api' + path, request);
-  if (!response.ok) throw new Error(`${response.status} ${path}`);
+  if (!response.ok) {
+    const payload = typeof response.json === 'function' ? await response.json().catch(() => ({})) : {};
+    throw new Error(payload.detail || `${response.status} ${path}`);
+  }
   return response.json();
 }
 
@@ -14,4 +17,10 @@ export function post(path, body) {
 
 export function patch(path, body) {
   return api(path, { method: 'PATCH', body: JSON.stringify(body) });
+}
+
+export async function transcribe(blob) {
+  const form = new FormData();
+  form.append('audio', blob, 'recording.webm');
+  return api('/transcriptions', { method: 'POST', body: form });
 }

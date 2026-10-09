@@ -29,7 +29,7 @@ export function LegalNote() {
   return (
     <p className="mx-[22px] mt-8 flex items-center justify-center gap-1.5 text-[13px] text-ink-sub">
       <Info size={16} strokeWidth={STROKE} aria-hidden="true" />
-      참고용 안내이며 법률 자문이 아닙니다
+      AI 기반 서비스이며 참고용 안내입니다. 법률 자문이나 작업 승인이 아닙니다.
     </p>
   );
 }

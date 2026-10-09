@@ -44,6 +44,7 @@ class TaskIn(BaseModel):
     text: str
     site_id: int = 1
     worker_id: int = 1
+    close_requested: bool = Field(True, exclude=True)
 
 
 class RuleCondition(BaseModel):
@@ -79,6 +80,7 @@ class TaskOut(BaseModel):
     conditions: Conditions
     checklist: list[ChecklistItem]
     run_id: str | None = None
+    close_requested: bool = False
 
 
 class Judgement(BaseModel):
@@ -162,6 +164,7 @@ class TbmIn(BaseModel):
     points: list[str] = Field(default_factory=list)
     attendees: str = ''
     memo: str = ''
+    transcript: str = Field('', exclude=True)
 
 
 class TbmOut(BaseModel):
@@ -172,9 +175,23 @@ class TbmOut(BaseModel):
 
 class WorkerFormIn(BaseModel):
     task_id: int
-    understood: bool
+    understood: bool = True
     risk_note: str = ''
     ppe_worn: bool
+    report_text: str = ''
+
+
+class WorkerFormOut(BaseModel):
+    id: int
+    task_id: int
+    report_text: str = ''
+    risk_note: str = ''
+    photo_url: str | None = None
+    created_at: str | None = None
+
+
+class TranscriptionOut(BaseModel):
+    text: str
 
 
 class RiskItem(BaseModel):
