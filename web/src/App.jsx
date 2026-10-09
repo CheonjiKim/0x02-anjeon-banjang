@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { Camera, ChartColumn, HardHat, ListTodo, Trophy } from 'lucide-react';
 import { STROKE } from './components/ui.jsx';
 import Welcome from './pages/Welcome.jsx';
@@ -25,15 +25,30 @@ function welcomeSeen() {
   catch { return true; }
 }
 
+function savedUser() {
+  try { return JSON.parse(localStorage.getItem('banjang.user') || 'null'); }
+  catch { return null; }
+}
+
 export default function App() {
   const [seen, setSeen] = useState(welcomeSeen);
+  const [user, setUser] = useState(savedUser);
   const location = useLocation();
+  const navigate = useNavigate();
   const standalone = location.pathname.startsWith('/worker/') || location.pathname === '/login';
 
   function start() {
     try { localStorage.setItem('banjang-welcome-seen', '1'); }
     catch { /* 저장이 막혀도 이번 화면에서는 시작한다. */ }
     setSeen(true);
+    navigate('/login');
+  }
+
+  function login(nextUser) {
+    try { localStorage.setItem('banjang.user', JSON.stringify(nextUser)); }
+    catch { /* 브라우저 저장소가 막혀도 이번 세션에서는 로그인한다. */ }
+    setUser(nextUser);
+    navigate(nextUser.role === 'worker' ? '/worker/1' : '/');
   }
 
   if (!seen && !standalone) return <Welcome onStart={start} />;
@@ -48,7 +63,7 @@ export default function App() {
         <Route path="/ranking" element={<Ranking />} />
         <Route path="/eval" element={<Eval />} />
         <Route path="/worker/:taskId" element={<WorkerForm />} />
-        <Route path="/login" element={<LoginSample />} />
+        <Route path="/login" element={<LoginSample onLogin={login} />} />
       </Routes>
       {!standalone && (
         <nav aria-label="주 메뉴" className="fixed inset-x-0 bottom-0 z-30 rounded-t-[28px] bg-white pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
