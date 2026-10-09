@@ -3,6 +3,7 @@
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import json
+import math
 import os
 from pathlib import Path
 from time import perf_counter
@@ -15,18 +16,23 @@ def price_file() -> Path:
     return Path(os.environ.get('BANJANG_PRICES', ROOT / 'config/model_prices.json'))
 
 
-def prices() -> dict[str, tuple[float, float]]:
+def prices() -> dict[str, tuple[float, float, float]]:
     try:
         data = json.loads(price_file().read_text(encoding='utf-8'))
     except (OSError, ValueError):
         return {}
     if not isinstance(data, dict):
         return {}
-    return {
-        model: (value.get('input_per_1m', 0), value.get('output_per_1m', 0))
-        for model, value in data.items()
-        if isinstance(value, dict)
-    }
+    table = {}
+    for model, value in data.items():
+        if not isinstance(value, dict):
+            continue
+        rates = (value.get('input_per_1m'), value.get('output_per_1m'),
+                 value.get('cached_input_per_1m', value.get('input_per_1m')))
+        if all(isinstance(rate, (int, float)) and not isinstance(rate, bool)
+               and math.isfinite(rate) and rate >= 0 for rate in rates):
+            table[model] = rates
+    return table
 
 
 def trace_dir() -> Path:
@@ -62,18 +68,25 @@ class Step:
         self.model = None
         self.prompt_tokens = 0
         self.completion_tokens = 0
+        self.cached_tokens = 0
         self.cost_usd = 0
         self.meta = {}
 
-    def record_usage(self, model, prompt_tokens=0, completion_tokens=0):
+    def record_usage(self, model, prompt_tokens=0, completion_tokens=0, *, cached_tokens=0):
         self.model = model
         self.prompt_tokens += prompt_tokens
         self.completion_tokens += completion_tokens
+        cached_tokens = max(0, min(cached_tokens, prompt_tokens))
+        self.cached_tokens += cached_tokens
         table = prices()
         if model not in table:
             self.meta['price_missing'] = model
-        input_price, output_price = table.get(model, (0, 0))
-        self.cost_usd += (prompt_tokens * input_price + completion_tokens * output_price) / 1_000_000
+            self.cost_usd = None
+            return
+        input_price, output_price, cached_price = table[model]
+        if self.cost_usd is not None:
+            self.cost_usd += ((prompt_tokens - cached_tokens) * input_price + cached_tokens * cached_price
+                              + completion_tokens * output_price) / 1_000_000
 
     def as_dict(self):
         result = {
@@ -86,6 +99,7 @@ class Step:
             'model': self.model,
             'prompt_tokens': self.prompt_tokens,
             'completion_tokens': self.completion_tokens,
+            'cached_tokens': self.cached_tokens,
             'cost_usd': self.cost_usd,
         }
         if self.meta:
@@ -123,6 +137,8 @@ class Trace:
 
     @property
     def cost_usd(self):
+        if any(step.cost_usd is None for step in self.steps):
+            return None
         return sum(step.cost_usd for step in self.steps)
 
     def as_dict(self):

@@ -92,7 +92,7 @@ def test_unpriced_model_is_flagged_not_hidden(tmp_path, monkeypatch):
     client, _ = client_with(lambda _: completion({'result': 'confirmed', 'observed': '소화기', 'retake_hint': ''}))
     step = Step('judge')
     client.judge('소화기', '소화기', b'photo', step=step)
-    assert step.cost_usd == 0 and step.meta['price_missing'] == 'm-judge'
+    assert step.cost_usd is None and step.meta['price_missing'] == 'm-judge'
 
 
 @pytest.mark.parametrize('case', ['http', 'body', 'choices', 'content', 'array', 'result', 'missing', 'refusal'])
@@ -129,10 +129,18 @@ def test_extract_bad_shape_raises():
         client.extract('용접')
 
 
-def test_prompts_are_files_with_v0_header(monkeypatch):
+def test_active_prompts_are_v1_and_baseline_v0_is_preserved(monkeypatch):
     monkeypatch.delenv('BANJANG_PROMPTS', raising=False)
     for name in ['extract', 'judge', 'verify']:
-        assert (prompt_dir() / f'{name}.md').read_text(encoding='utf-8').startswith('<!-- v0 초안 — 사용자 검토 전')
+        assert (prompt_dir() / f'{name}.md').read_text(encoding='utf-8').startswith('<!-- v1:')
+        assert (prompt_dir().parent / 'v0' / f'{name}.md').exists()
     text = load_prompt('judge', item='소화기 비치', photo_hint='소화기')
     assert '소화기 비치' in text and '점검 완료' in text
     assert '{item}' not in text and '<!--' not in text
+
+
+def test_cached_tokens_are_priced_at_cached_rate():
+    step = Step('extract')
+    step.record_usage('gpt-4.1-mini', 2000, 100, cached_tokens=1000)
+    assert step.cached_tokens == 1000
+    assert step.cost_usd == pytest.approx((1000 * .4 + 1000 * .1 + 100 * 1.6) / 1_000_000)

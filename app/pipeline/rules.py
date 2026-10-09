@@ -37,15 +37,15 @@ PHOTO_HINTS = {
     'cutting-ppe': '보안경과 청력 보호구를 착용한 작업자',
     'power-tool-electric': '손상 없는 전선과 누전 차단 장치',
     'cutting-fire': '절단 불티 주변의 소화기와 방화 조치',
-    'paint-ventilation': '작동 중인 환풍기·송풍기 또는 열린 개구부',
+    'paint-ventilation': '환풍기·송풍기 또는 열린 개구부. 설비가 있다는 사실만으로 가동·풍량을 확정하지 않는다. 정지 사진에서 가동을 확인할 수 없으면 판단불가이며 관리자에게 실제 가동·풍량 확인을 요청한다. 같은 사진의 반복 촬영으로 가동을 입증하라고 요구하지 않는다',
     'confined-space': '밀폐 공간 출입 관리와 환기 장치',
     'paint-respirator': '유기용제용 방독마스크를 착용한 작업자',
     'no-ignition': '점화원 제거·화기 금지 표지',
     'msds-posting': '도료·방수재의 물질안전보건자료(MSDS)',
     'flammable-containers': '밀폐 보관한 도료·시너 용기',
     'fall-height-check': '작업 높이와 추락 방지 조치를 확인하는 모습',
-    'ladder-use': '평탄한 바닥에 고정하고 3점 지지로 사용하는 사다리',
-    'horse-scaffold': '수평 발판과 잠금 상태가 보이는 말비계',
+    'ladder-use': '사다리 모든 다리가 견고하고 평탄한 바닥에 직접 닿는지, 작업자의 발이 최상부 발판보다 아래에 있는지 각각 확인. 다리 밑 판재·블록·단열재 받침 또는 최상부 발판 위 작업은 미충족이다. 보조자가 잡고 있어도 최상부 작업을 승인하지 않는다. 사람이 없으면 최상부 작업 여부는 판단불가이다. 발과 발판의 위치 또는 접지 부분이 가려지면 판단불가이다',
+    'horse-scaffold': '말비계 지주 하단이 견고하고 평탄한 바닥에 직접 닿아 있고 단열재·블록 등 임의 받침이 없는지 확인. 이 항목은 지주 하단·바닥만 판정하며 잠금 장치나 발판 수평은 별도 점검이다. 접지 부분이 가려지면 판단불가',
     'helmet-chinstrap': '턱끈을 조인 안전모',
     'ladder-buddy': '사다리를 잡아 주는 보조 작업자',
     'scaffold-clear-deck': '물건을 치우고 틈 없이 정리한 작업 발판',
@@ -71,7 +71,7 @@ _WORK_ITEMS = {
     ],
     '사다리·말비계': [
         ('fall-height-check', '작업 높이·추락 방지 확인'), ('ladder-use', '사다리 설치·사용 상태 확인'),
-        ('horse-scaffold', '말비계 발판·잠금 상태 확인'), ('helmet-chinstrap', '안전모·턱끈 착용'),
+        ('horse-scaffold', '말비계 지주 하단·바닥 상태 확인'), ('helmet-chinstrap', '안전모·턱끈 착용'),
         ('ladder-buddy', '사다리 보조 작업자 배치'), ('scaffold-clear-deck', '작업 발판 정리 상태 확인'),
     ],
 }
@@ -102,8 +102,10 @@ def _rule_catalog() -> tuple[dict, dict]:
 def _is_high_or_unknown(height: str) -> bool:
     if height == UNKNOWN or '층' in height:
         return True
-    number = re.search(r'\d+', height)
-    return number is None or int(number.group(0)) >= 2
+    if height == '지상':
+        return False
+    number = re.fullmatch(r'(\d+(?:\.\d+)?)m', height)
+    return number is None or float(number.group(1)) >= 2
 
 
 def _required(code: str, c: Conditions, *, force: bool) -> bool:

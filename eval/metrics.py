@@ -57,6 +57,25 @@ def _summary(values):
     return {'p50': round(median(values), 2), 'p95': round(values[min(int(len(values) * .95), len(values) - 1)], 2), 'max': round(max(values), 2)} if values else None
 
 
+def _known_cost(entry):
+    # Also respect legacy traces where missing prices were written as $0.
+    if entry.get('meta', {}).get('price_missing'):
+        return None
+    if any(_known_cost(step) is None for step in entry.get('steps', [])):
+        return None
+    return entry.get('cost_usd')
+
+
+def _cost_total(entries):
+    amounts = [_known_cost(entry) for entry in entries]
+    return None if any(value is None for value in amounts) else round(sum(amounts), 8)
+
+
+def _cost_per_run(entries):
+    total = _cost_total(entries)
+    return None if total is None else round(total / len(entries), 8)
+
+
 def cost_and_latency(traces):
     if not traces:
         return {'n_runs': 0}
@@ -65,8 +84,9 @@ def cost_and_latency(traces):
         for step in trace['steps']:
             by_step[step['name']].append(step)
     return {'n_runs': len(traces), 'latency_ms': _summary([t['latency_ms'] for t in traces]),
-            'cost_usd': {'total': round(sum(t['cost_usd'] for t in traces), 8), 'per_run': round(sum(t['cost_usd'] for t in traces) / len(traces), 8)},
-            'per_step': {name: {'n': len(steps), 'latency_ms_p50': round(median([s['latency_ms'] for s in steps]), 2), 'cost_usd': round(sum(s['cost_usd'] for s in steps), 8)} for name, steps in by_step.items()},
+            'cost_usd': {'total': _cost_total(traces), 'per_run': _cost_per_run(traces),
+                         'status': 'unavailable' if _cost_total(traces) is None else 'estimated'},
+            'per_step': {name: {'n': len(steps), 'latency_ms_p50': round(median([s['latency_ms'] for s in steps]), 2), 'cost_usd': _cost_total(steps)} for name, steps in by_step.items()},
             'errors': sum(bool(t.get('error')) for t in traces)}
 
 
@@ -77,7 +97,7 @@ def per_flow(traces):
     grouped = defaultdict(list)
     for trace in traces:
         grouped[trace['kind']].append(trace)
-    return {kind: {'n': len(rows), 'cost_usd_per_run': round(sum(r['cost_usd'] for r in rows) / len(rows), 8),
+    return {kind: {'n': len(rows), 'cost_usd_per_run': _cost_per_run(rows),
                    'latency_ms_p50': round(median([r['latency_ms'] for r in rows]), 2),
                    'latency_ms_p95': _summary([r['latency_ms'] for r in rows])['p95'],
                    'llm_calls_per_run': round(sum(sum(s['name'] in LLM_STEPS for s in r['steps']) for r in rows) / len(rows), 2),

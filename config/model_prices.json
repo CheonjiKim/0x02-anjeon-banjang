@@ -1,4 +1,7 @@
 {
-  "_comment": "모델별 단가(USD, 100만 토큰당). 키는 BANJANG_MODEL_* 에 넣은 모델 이름과 같아야 한다. 단가는 OpenAI 공식 가격표에서 확인해 넣는다. 없는 모델은 비용 0으로 집계되고 실행 기록에 price_missing이 남는다.",
-  "mock": {"input_per_1m": 0, "output_per_1m": 0}
+  "_comment": "USD/100만 토큰. 2026-10-09 공식 모델 페이지 확인. 미등록 모델 비용은 null(미산정). 캐시 할인 반영 추정치이며 세금·청구 조정 제외.",
+  "_source": "https://developers.openai.com/api/docs/models/gpt-4.1-mini",
+  "mock": {"input_per_1m": 0, "output_per_1m": 0},
+  "gpt-4.1-mini": {"input_per_1m": 0.4, "cached_input_per_1m": 0.1, "output_per_1m": 1.6},
+  "gpt-4.1-mini-2025-04-14": {"input_per_1m": 0.4, "cached_input_per_1m": 0.1, "output_per_1m": 1.6}
 }

@@ -74,6 +74,8 @@ export default function Evidence() {
             </select>
           </label>
           {selected && <p className="mt-2 text-sm text-ink-sub">사진에는 “{selected.title}” 조치가 실제로 보여야 합니다.</p>}
+          {selectedCode === 'paint-ventilation' && <p className="mt-2 rounded-xl bg-warn-soft p-3 text-sm">설비가 보이는 것과 실제 가동·풍량 확인은 다릅니다. 사진으로 확인되지 않으면 관리자가 현장에서 확인하고 그 근거를 기록해 주세요.</p>}
+          {selectedCode === 'horse-scaffold' && <p className="mt-2 rounded-xl bg-brand-soft p-3 text-sm">이 사진은 지주 하단과 바닥 접촉·임의 받침 여부를 확인합니다. 발판·잠금 상태나 작업 전체를 승인하는 판정이 아닙니다.</p>}
           <label className="mt-4 block text-sm font-bold">사진
             <input aria-label="증빙 사진" type="file" accept="image/*" required onChange={(event) => setPhoto(event.target.files?.[0] || null)} className="mt-2 block w-full text-sm" />
           </label>
