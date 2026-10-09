@@ -17,14 +17,26 @@ const roles = {
   },
 };
 
-export default function LoginSample() {
+export default function LoginSample({ onLogin }) {
   const [role, setRole] = useState('foreman');
-  const [notice, setNotice] = useState('');
+  const [loginId, setLoginId] = useState('admin');
+  const [password, setPassword] = useState('1234');
+  const [error, setError] = useState('');
   const selected = roles[role];
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
-    setNotice(`${selected.label} 로그인은 데모 화면입니다.`);
+    setError('');
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ login_id: loginId, password }),
+      });
+      if (!response.ok) throw new Error();
+      onLogin(await response.json());
+    } catch {
+      setError('아이디 또는 비밀번호를 다시 확인해 주세요.');
+    }
   }
 
   return (
@@ -44,7 +56,11 @@ export default function LoginSample() {
             const Icon = item.Icon;
             const active = role === key;
             return (
-              <button key={key} type="button" role="radio" aria-checked={active} onClick={() => setRole(key)}
+              <button key={key} type="button" role="radio" aria-checked={active} onClick={() => {
+                setRole(key);
+                setLoginId(key === 'foreman' ? 'admin' : 'worker');
+                setPassword('1234');
+              }}
                 className={`flex min-h-28 items-center gap-4 rounded-[20px] border-2 p-5 text-left transition ${active ? item.className : 'border-line bg-white text-ink'}`}>
                 <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${active ? 'bg-white/80' : 'bg-gray-100 text-ink-sub'}`}>
                   <Icon size={25} strokeWidth={STROKE} aria-hidden="true" />
@@ -56,16 +72,14 @@ export default function LoginSample() {
         </div>
 
         <Panel className="!mx-0 !p-5">
-          <label className="block text-[15px] font-bold" htmlFor="name">이름</label>
-          <input id="name" className="mt-2 h-14 w-full rounded-2xl border border-line bg-white px-4" placeholder="예) 김안전" />
-          <label className="mt-4 block text-[15px] font-bold" htmlFor="site">현장</label>
-          <select id="site" className="mt-2 h-14 w-full rounded-2xl border border-line bg-white px-4" defaultValue="basic">
-            <option value="basic">기본 현장</option>
-            <option value="sample">시연 현장</option>
-          </select>
+          <label className="block text-[15px] font-bold" htmlFor="loginId">아이디</label>
+          <input id="loginId" value={loginId} onChange={(event) => setLoginId(event.target.value)} className="mt-2 h-14 w-full rounded-2xl border border-line bg-white px-4" autoComplete="username" />
+          <label className="mt-4 block text-[15px] font-bold" htmlFor="password">비밀번호</label>
+          <input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="mt-2 h-14 w-full rounded-2xl border border-line bg-white px-4" autoComplete="current-password" />
+          <p className="mt-3 text-[14px] text-ink-sub">시연 계정: 관리자 admin / 1234 · 근로자 worker / 1234</p>
         </Panel>
 
-        {notice && <p role="status" className="rounded-2xl bg-review-soft px-4 py-3 text-center text-[15px] font-bold text-review">{notice}</p>}
+        {error && <p role="alert" className="rounded-2xl bg-danger-soft px-4 py-3 text-center text-[15px] font-bold text-danger">{error}</p>}
         <AppButton big className="w-full">{selected.label}으로 로그인</AppButton>
       </form>
       <LegalNote />
