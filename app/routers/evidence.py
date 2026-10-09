@@ -55,6 +55,21 @@ async def create_evidence(
                        **result.judgement.model_dump())
 
 
+@router.get('/task/{task_id}')
+def task_evidence(task_id: int, worker_id: int, conn: sqlite3.Connection = Depends(get_db)):
+    task = load_task(conn, task_id)
+    if task.worker_id != worker_id:
+        raise HTTPException(status_code=403, detail='배정된 작업자만 사진을 확인할 수 있습니다.')
+    rows = conn.execute(
+        'SELECT e.* FROM evidence_photos e JOIN '
+        '(SELECT item_code, MAX(id) AS latest_id FROM evidence_photos '
+        'WHERE task_id = ? AND worker_id = ? GROUP BY item_code) latest ON latest.latest_id = e.id '
+        'ORDER BY e.id', (task_id, worker_id),
+    ).fetchall()
+    return [{'id': row['id'], 'item_code': row['item_code'], 'result': row['result'],
+             'photo_url': f"/api/uploads/{Path(row['path']).name}"} for row in rows]
+
+
 @router.get('/{evidence_id}/reviews', response_model=list[EvidenceReviewOut])
 def evidence_reviews(evidence_id: int, conn: sqlite3.Connection = Depends(get_db)):
     if conn.execute('SELECT 1 FROM evidence_photos WHERE id = ?', (evidence_id,)).fetchone() is None:

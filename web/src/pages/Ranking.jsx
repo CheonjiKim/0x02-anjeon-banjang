@@ -27,10 +27,10 @@ export default function Ranking() {
   const participation = scores.streaks.find((streak) => streak.kind === 'participation');
   return (
     <Screen title="내 기록">
-      <Panel className="bg-brand-primary text-white">
-        <p className="text-sm text-blue-100">내 안전 활동 점수</p>
-        <p className="mt-1 text-5xl font-extrabold tnum">{scores.total}<span className="ml-1 text-xl">점</span></p>
-        <p className="mt-3 flex items-center gap-2 text-sm text-blue-100"><CircleCheck size={17} />AI 또는 관리자 확인을 거친 활동만 반영됩니다.</p>
+      <Panel className="bg-brand-soft text-ink">
+        <p className="text-sm font-bold text-ink">내 안전 활동 점수</p>
+        <p className="mt-1 text-5xl font-extrabold text-black tnum">{scores.total}<span className="ml-1 text-xl">점</span></p>
+        <p className="mt-3 flex items-center gap-2 text-sm text-ink"><CircleCheck size={17} />AI 또는 관리자 확인을 거친 활동만 반영됩니다.</p>
       </Panel>
       <Panel className="mt-4">
         <div className="flex items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-ok-soft text-ok"><CalendarDays /></span><div><p className="font-bold">참여 연속 기록</p><p className="text-sm text-ink-sub">오늘 안전 활동을 이어 가고 있어요.</p></div></div>
