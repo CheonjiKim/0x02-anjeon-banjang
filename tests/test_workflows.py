@@ -115,6 +115,35 @@ def test_painting_mixed_with_welding_warns_the_foreman():
     assert 'mixed-work-warning' in {item.code for item in result.checklist if item.level == 'required'}
 
 
+def test_runtime_checklist_loads_rule_text_and_source_from_json():
+    from app.pipeline.rules import _rule_catalog, photo_hint
+    _rule_catalog.cache_clear()
+    task = run_task('2층 각파이프 용접, 옆에 합판')
+    fire_watch = next(item for item in task.checklist if item.code == 'fire-watch')
+    assert 'welding.json' in fire_watch.source
+    assert 'verified_via_guide' in fire_watch.source
+    assert '화재감시자를 지정해 배치' in fire_watch.note
+    assert 'fire_watcher_with_equipment' in photo_hint('fire-watch', fire_watch.title)
+
+
+def test_tbm_curated_aliases_match_and_missing_condition_stays_missing():
+    task = run_task(DEMO)
+    result = run_tbm(['화재 감시자와 불티 방지포를 설치하고 소화기를 준비합니다.'], task.checklist)
+    missing = {item.code for item in result.missing}
+    assert 'fire-watch' not in missing
+    assert 'spark-cover' not in missing
+    assert 'extinguisher' not in missing
+    assert 'ventilation' in missing
+
+
+def test_tbm_does_not_count_a_negated_safety_measure():
+    task = run_task(DEMO)
+    result = run_tbm(['소화기 없음, 화재감시자 미배치'], task.checklist)
+    missing = {item.code for item in result.missing}
+    assert 'extinguisher' in missing
+    assert 'fire-watch' in missing
+
+
 @pytest.mark.parametrize(
     ('text', 'risk_code'),
     [

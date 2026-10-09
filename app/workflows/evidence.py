@@ -1,6 +1,6 @@
 """사진 판정은 확인됨일 때만 한 번 더 검증한다."""
 
-from app.llm import JudgeOut, MockClient, VerifyOut, get_client
+from app.llm import JudgeOut, MockClient, VerifyOut, get_vision_client
 from app.pipeline.rules import photo_hint
 from app.schemas import ChecklistItem, EvidenceResult, Judgement, TodoCard
 from app.tracing import trace_run
@@ -19,7 +19,7 @@ def run_evidence(item: ChecklistItem, photo: bytes, *, forced: str | None = None
     with trace_run('evidence', item_code=item.code, task_id=task_id) as trace:
         with trace.step('judge', item_code=item.code, photo=photo, forced=forced, scenario=scenario) as step:
             try:
-                client = MockClient(forced=forced, scenario=scenario) if forced is not None or scenario is not None else get_client()
+                client = MockClient(forced=forced, scenario=scenario) if forced is not None or scenario is not None else get_vision_client()
                 step.meta['llm'] = client.name
                 first = Judgement(**client.judge(item.title, hint, photo, step=step).model_dump())
             except Exception as exc:
