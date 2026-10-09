@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { AlertTriangle, Camera, ClipboardCheck, TriangleAlert } from 'lucide-react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { AlertTriangle, TriangleAlert } from 'lucide-react';
 import { api } from '../lib/api.js';
 import { AppButton, Panel, Screen, StatusBadge } from '../components/ui.jsx';
 
@@ -11,13 +11,14 @@ const CONDITION_LABELS = {
 
 export default function Checklist() {
   const location = useLocation();
+  const { taskId: routeTaskId } = useParams();
   const [task, setTask] = useState(location.state?.task || null);
   const [risks, setRisks] = useState([]);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    const id = localStorage.getItem('banjang.taskId');
+    const id = routeTaskId || location.state?.task?.id || localStorage.getItem('banjang.taskId');
     if (!id) return;
     Promise.all([api('/tasks/' + id), api('/tasks/' + id + '/risk')])
       .then(([loadedTask, loadedRisks]) => {
@@ -25,7 +26,7 @@ export default function Checklist() {
         setRisks(loadedRisks);
       })
       .catch((requestError) => setError(requestError.message));
-  }, []);
+  }, [routeTaskId]);
 
   if (!task) {
     return <Screen title="체크리스트"><Panel><p>{error || '작업을 먼저 입력해 주세요.'}</p><AppButton className="mt-4 w-full" onClick={() => navigate('/')}>작업 화면으로 이동</AppButton></Panel></Screen>;
@@ -35,7 +36,7 @@ export default function Checklist() {
   return (
     <Screen title="안전 체크리스트">
       {error && <Panel className="mb-4"><p role="alert" className="text-danger">최신 체크리스트를 불러오지 못했습니다: {error}</p><AppButton outline className="mt-3 w-full" onClick={() => window.location.reload()}>다시 불러오기</AppButton></Panel>}
-      {location.state?.reviewCompleted && <Panel className="mb-4 bg-ok-soft"><p className="font-bold text-ok">관리자 조건 검토 기록을 저장했습니다.</p><p className="mt-1 text-sm">이제 체크리스트 초안을 읽고 현장 조치를 확인해 주세요. 작업 승인은 아닙니다.</p></Panel>}
+      {(location.state?.reviewCompleted || task.review_status === 'reviewed') && <Panel className="mb-4 bg-ok-soft"><p className="font-bold text-ok">관리자 조건 검토 기록을 저장했습니다.</p><p className="mt-1 text-sm">이제 체크리스트 초안을 읽고 현장 조치를 확인해 주세요. 작업 승인은 아닙니다.</p></Panel>}
       <Panel>
         <p className="text-sm text-ink-sub">오늘 작업</p>
         <p className="mt-1 font-bold">{task.text}</p>
@@ -70,11 +71,6 @@ export default function Checklist() {
           <p className="mt-2 text-sm text-ink-sub">{risk.measure}</p>
         </div>)}
       </Panel>
-
-      <div className="mx-[22px] mt-5 grid gap-3">
-        <AppButton big className="w-full" onClick={() => navigate('/tbm', { state: { task } })}><ClipboardCheck className="mr-2 inline" size={20} />TBM 기록하기</AppButton>
-        <AppButton outline className="w-full" onClick={() => navigate('/evidence')}><Camera className="mr-2 inline" size={20} />사진 증빙 등록</AppButton>
-      </div>
     </Screen>
   );
 }
