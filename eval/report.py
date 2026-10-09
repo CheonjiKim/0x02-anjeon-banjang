@@ -20,7 +20,8 @@ def render_one(result):
                   '③ 사진 분류 정확도', f"  전체: {_number(result['photo']['accuracy_pct'])}%",
                   '④ TBM 누락 항목 탐지율', f"  재현율: {_number(result['tbm']['recall_pct'])}%", '⑤ 흐름별 건당 비용·응답 시간'])
     for kind, flow in result['flows'].items():
-        lines.append(f"  {kind}: 비용 ${flow['cost_usd_per_run']}, p50 {flow['latency_ms_p50']}ms, LLM {flow['llm_calls_per_run']}회")
+        cost = '미산정(단가·사용량 확인 필요)' if flow['cost_usd_per_run'] is None else f"${flow['cost_usd_per_run']} (추정)"
+        lines.append(f"  {kind}: 비용 {cost}, p50 {flow['latency_ms_p50']}ms, LLM {flow['llm_calls_per_run']}회")
     return lines
 
 
