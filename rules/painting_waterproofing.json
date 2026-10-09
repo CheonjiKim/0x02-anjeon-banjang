@@ -1,0 +1,51 @@
+{
+  "schema_version": "0.1",
+  "work_type": "painting_waterproofing",
+  "label": "실내 도장·방수",
+  "rules": [
+    {
+      "id": "P1",
+      "title": "환기 확보",
+      "hazard": "실내 도장 작업에서 증기·분진이 축적되어 건강 피해와 화재·폭발 위험이 커짐",
+      "protections": [
+        "밀폐 또는 환기가 불량한 공간에서는 송풍기·환풍기를 가동",
+        "용접 등 불티가 생기는 작업과 겹치면 관리자에게 혼재작업 위험을 알림"
+      ],
+      "applies_when": { "ventilation": "enclosed" },
+      "exceptions": [],
+      "level": { "when_applies": "required", "otherwise": "recommended", "when_unknown": "required" },
+      "evidence": {
+        "method": "photo",
+        "photo_items": ["ventilation_fan_running"],
+        "ask": false
+      },
+      "source": {
+        "basis": "poc_scenario",
+        "articles": ["AI-Hub 시나리오 31"],
+        "status": "needs_check"
+      }
+    },
+    {
+      "id": "P7",
+      "title": "인화성 용기 정리",
+      "hazard": "우레탄 폼 작업 구역의 시너 등 인화성 용기가 화재 위험을 높임",
+      "protections": [
+        "작업 구역 주변의 인화성 용기는 분리·정리",
+        "용기 주변에서는 불티가 생기는 작업을 피하기"
+      ],
+      "applies_when": { "flammable_containers_nearby": "yes" },
+      "exceptions": [],
+      "level": { "when_applies": "required", "otherwise": "recommended", "when_unknown": "required" },
+      "evidence": {
+        "method": "photo",
+        "photo_items": ["flammable_containers_absent"],
+        "ask": false
+      },
+      "source": {
+        "basis": "poc_scenario",
+        "articles": ["AI-Hub 시나리오 32"],
+        "status": "needs_check"
+      }
+    }
+  ]
+}

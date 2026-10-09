@@ -1,0 +1,68 @@
+{
+  "schema_version": "0.1",
+  "work_type": "ladder_horse_scaffold",
+  "label": "사다리·말비계",
+  "rules": [
+    {
+      "id": "L2",
+      "title": "사다리 사용",
+      "hazard": "불안정한 사다리 또는 최상부 발판 작업으로 추락함",
+      "protections": [
+        "사다리 다리는 받침 없이 견고하고 평탄한 바닥에 설치",
+        "최상부 발판에 서서 작업하지 않기"
+      ],
+      "applies_when": { "always": true },
+      "exceptions": [],
+      "level": { "when_applies": "required", "otherwise": "required", "when_unknown": "required" },
+      "evidence": {
+        "method": "photo",
+        "photo_items": ["ladder_feet_on_firm_floor", "not_working_on_top_step"],
+        "ask": true
+      },
+      "source": {
+        "basis": "poc_scenario",
+        "articles": ["AI-Hub 시나리오 09·10"],
+        "status": "needs_check"
+      },
+      "design_note": "사람이 없는 정상 사다리 사진은 최상부 작업 여부를 판단할 수 없어 판단불가로 처리한다."
+    },
+    {
+      "id": "L3",
+      "title": "말비계 지주 하단·바닥",
+      "hazard": "말비계 다리 아래의 받침 때문에 구조가 불안정해져 전도·추락함",
+      "protections": ["말비계 지주 하단은 견고하고 평탄한 바닥에 설치", "다리 아래에 단열재·블록 등 임의 받침을 두지 않기"],
+      "applies_when": { "always": true },
+      "exceptions": [],
+      "level": { "when_applies": "required", "otherwise": "required", "when_unknown": "required" },
+      "evidence": {
+        "method": "photo",
+        "photo_items": ["horse_scaffold_feet_on_firm_floor"],
+        "ask": false
+      },
+      "source": {
+        "basis": "poc_scenario",
+        "articles": ["AI-Hub 시나리오 44"],
+        "status": "needs_check"
+      }
+    },
+    {
+      "id": "L6",
+      "title": "말비계 발판 위 자재 적치 금지",
+      "hazard": "말비계 발판 위 자재가 걸림·낙하 위험을 만듦",
+      "protections": ["말비계 발판 위에는 페인트 통 등 자재를 올려두지 않기", "자재는 바닥의 안전한 위치에 보관"],
+      "applies_when": { "always": true },
+      "exceptions": [],
+      "level": { "when_applies": "required", "otherwise": "required", "when_unknown": "required" },
+      "evidence": {
+        "method": "photo",
+        "photo_items": ["horse_scaffold_deck_clear"],
+        "ask": false
+      },
+      "source": {
+        "basis": "site_practice",
+        "articles": ["AI-Hub 시나리오 43"],
+        "status": "needs_check"
+      }
+    }
+  ]
+}

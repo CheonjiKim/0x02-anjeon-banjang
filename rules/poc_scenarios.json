@@ -1,0 +1,51 @@
+{
+  "schema_version": "0.1",
+  "purpose": "PoC 사진 평가 시나리오와 수칙·판정 항목의 대응",
+  "dataset_policy": "AI-Hub 데이터는 평가용으로만 사용하며 모델 학습에는 사용하지 않는다.",
+  "topics": [
+    {
+      "work_type": "welding",
+      "label": "용접",
+      "scenarios": ["33", "34"],
+      "condition": "가연물",
+      "rules": [
+        { "rule_id": "V1", "item_code": "fire-watch", "scenario": "34", "note": "가연물이 있으면 필수, 없으면 권장" },
+        { "rule_id": "V2", "item_code": "spark-cover", "scenario": "34", "note": "가연물 방호 조건" },
+        { "rule_id": "V3", "item_code": "extinguisher", "scenario": "33", "note": "소화기 사진 판정" }
+      ]
+    },
+    {
+      "work_type": "circular_saw",
+      "label": "절단·원형톱",
+      "scenarios": ["39", "40"],
+      "condition": "가연물",
+      "rules": [
+        { "rule_id": "C5", "item_code": "cutting-fire", "scenario": "39", "note": "소화기와 불티방지커버를 함께 판정" },
+        { "rule_id": "C5", "item_code": "cutting-fire", "scenario": "40", "note": "가연물 조건 분기" }
+      ]
+    },
+    {
+      "work_type": "painting_waterproofing",
+      "label": "실내 도장·방수",
+      "scenarios": ["31", "32", "C-04"],
+      "condition": "환기",
+      "rules": [
+        { "rule_id": "P1", "item_code": "paint-ventilation", "scenario": "31", "note": "밀폐 공간이면 환풍기 필수" },
+        { "rule_id": "P7", "item_code": "flammable-containers", "scenario": "32", "note": "인화성 용기 정리" },
+        { "rule_id": null, "item_code": null, "scenario": "C-04", "note": "정상·비정상 구분 없이 조건 추출과 판단불가 후보로만 사용" }
+      ]
+    },
+    {
+      "work_type": "ladder_horse_scaffold",
+      "label": "사다리·말비계",
+      "scenarios": ["09", "10", "43", "44"],
+      "condition": "작업 높이",
+      "rules": [
+        { "rule_id": "L2", "item_code": "ladder-use", "scenario": "09", "note": "사람이 없는 정상 사진은 판단불가" },
+        { "rule_id": "L2", "item_code": "ladder-use", "scenario": "10", "note": "최상부 발판 작업 금지" },
+        { "rule_id": "L6", "item_code": "scaffold-clear-deck", "scenario": "43", "note": "말비계 발판 위 자재 적치 금지" },
+        { "rule_id": "L3", "item_code": "horse-scaffold", "scenario": "44", "note": "말비계 지주 하단·바닥" }
+      ]
+    }
+  ]
+}

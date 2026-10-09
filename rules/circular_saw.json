@@ -1,0 +1,31 @@
+{
+  "schema_version": "0.1",
+  "work_type": "circular_saw",
+  "label": "절단·원형톱",
+  "rules": [
+    {
+      "id": "C5",
+      "title": "가연물 방호·소화기구·불티방지커버",
+      "hazard": "절단 불꽃이 주변 가연물에 옮겨붙어 화재로 번짐",
+      "protections": [
+        "작업 장소 가까이에 소화기구를 비치",
+        "불티방지커버 또는 방화포로 불티 비산을 막기",
+        "주변 가연물은 제거하거나 방호"
+      ],
+      "applies_when": { "combustibles_present": "yes" },
+      "exceptions": [],
+      "level": { "when_applies": "required", "otherwise": "recommended", "when_unknown": "required" },
+      "evidence": {
+        "method": "photo",
+        "photo_items": ["extinguisher_present", "spark_cover_installed"],
+        "ask": false
+      },
+      "source": {
+        "basis": "poc_scenario",
+        "articles": ["AI-Hub 시나리오 39·40"],
+        "status": "needs_check"
+      },
+      "design_note": "PoC 사진 판정에서는 소화기와 불티방지커버가 모두 보여야 확인됨으로 처리한다."
+    }
+  ]
+}
