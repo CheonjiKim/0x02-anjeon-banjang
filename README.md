@@ -6,6 +6,8 @@
 
 ## 행사 참여
 
+<img src="docs/assets/devday-seoul-2026-poster.jpg" alt="DevDay Exchange Community Hackathon Seoul 행사 포스터 — 2026년 10월 9일, AWS Korea Centerfield East" width="480" />
+
 안전반장은 **OpenAI DevDay Community Hackathon Seoul**에 참여하여 개발한 프로젝트입니다. 건설 현장의 작업 지시부터 안전 체크리스트, 사진 증빙, 관리자 검토까지 이어지는 모바일 안전 기록 PoC를 만들었습니다.
 
 ## 팀원과 역할
