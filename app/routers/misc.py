@@ -183,11 +183,28 @@ def incident(payload: IncidentIn, conn: sqlite3.Connection = Depends(get_db)):
 
 @router.get('/incidents')
 def incidents(worker_id: int | None = None, conn: sqlite3.Connection = Depends(get_db)):
-    query = 'SELECT * FROM incidents'
+    query = 'SELECT i.*, w.name AS worker_name FROM incidents i LEFT JOIN workers w ON w.id = i.worker_id'
     args = () if worker_id is None else (worker_id,)
     if worker_id is not None:
-        query += ' WHERE worker_id = ?'
-    return [dict(row) for row in conn.execute(query + ' ORDER BY id DESC', args)]
+        query += ' WHERE i.worker_id = ?'
+    return [{**dict(row), 'photo_url': f"/api/uploads/{Path(row['photo_path']).name}" if row['photo_path'] else None,
+             'status': 'completed' if row['follow_up_done'] else 'in_progress'}
+            for row in conn.execute(query + ' ORDER BY i.id DESC', args)]
+
+
+@router.post('/incidents/{incident_id}/photo')
+async def incident_photo(incident_id: int, request: Request, photo: UploadFile = File(...), conn: sqlite3.Connection = Depends(get_db)):
+    row = conn.execute('SELECT id FROM incidents WHERE id = ?', (incident_id,)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail='위험 신고를 찾을 수 없습니다.')
+    content = await photo.read()
+    if not content:
+        raise HTTPException(status_code=422, detail='비어 있는 사진입니다.')
+    suffix = Path(photo.filename or '').suffix or '.jpg'
+    path = Path(request.app.state.upload_dir) / f'incident-{incident_id}{suffix}'
+    path.write_bytes(content)
+    conn.execute('UPDATE incidents SET photo_path = ? WHERE id = ?', (str(path), incident_id))
+    return {'id': incident_id, 'photo_url': f'/api/uploads/{path.name}'}
 
 
 @router.post('/training-reports', status_code=status.HTTP_201_CREATED)
