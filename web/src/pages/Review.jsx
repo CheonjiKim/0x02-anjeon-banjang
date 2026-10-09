@@ -38,7 +38,7 @@ export default function Review() {
   async function correctConditions() {
     const values = { ...task.conditions };
     const work = values.work.trim();
-    values.work = { '용접': '용접·용단', '용단': '용접·용단' }[work] || work;
+    values.work = { '용접': '용접·용단', '용단': '용접·용단' }[work] || work || '알 수 없음';
     if (values.work !== '알 수 없음' && !SUPPORTED_WORK.includes(values.work)) {
       window.alert(UNSUPPORTED_WORK_MESSAGE);
       return;
@@ -51,8 +51,8 @@ export default function Review() {
       setItems(updated.checklist);
       setDirty(false);
       setMessage(updated.review_status === 'ready'
-        ? '조건을 반영하고 체크리스트를 다시 생성했습니다. 검토 기록을 저장해 주세요.'
-        : '조건을 저장했습니다. 미확인 필수 조건을 확인해 주세요.');
+        ? '체크리스트를 다시 생성했습니다. 정보가 없는 조건은 필수 조치로 유지됩니다.'
+        : '조건을 저장했습니다. 작업 종류를 확인해 주세요.');
     } catch (error) {
       if (error.status === 422 && error.message === UNSUPPORTED_WORK_MESSAGE) window.alert(error.message);
       else setMessage(error.message);
@@ -65,7 +65,7 @@ export default function Review() {
         method: 'POST',
         body: JSON.stringify({
           action: 'conditions_corrected',
-          reason: '관리자가 작업 지시 원문과 추출 조건을 대조하고 누락 조건을 보정했습니다.',
+          reason: '관리자가 작업 지시 원문과 추출 조건을 대조했습니다. 정보가 없는 조건은 보수적으로 유지합니다.',
         }),
       });
       setTask(updated);
@@ -87,7 +87,7 @@ export default function Review() {
   return (
     <Screen title="관리자 검토">
       <Panel>
-        <p className="text-sm text-ink-sub">작업 원문과 AI 추출 조건을 대조합니다. 불확실한 조건은 관리자 확인 전까지 작업 준비를 완료하지 않습니다.</p>
+        <p className="text-sm text-ink-sub">작업 원문과 AI 추출 조건을 대조합니다. 정보가 없는 조건은 안전 조치를 필수로 유지한 채 체크리스트를 만듭니다.</p>
         {(task?.review_status === 'pending' || task?.review_status === 'ready') && (
           <div className="mt-3 rounded-xl bg-warn-soft p-3">
             {task.review_status === 'pending' && <><StatusBadge kind="uncertain" /><p className="mt-2">{task.review_reason}</p></>}
@@ -97,8 +97,9 @@ export default function Review() {
                 <label key={key} className="text-sm">
                   {CONDITION_LABELS[key] || key}
                   <input
-                    value={value}
+                    value={value === '알 수 없음' ? '' : value}
                     onChange={event => updateCondition(key, event.target.value)}
+                    placeholder={key === 'work' ? '작업 종류 확인 필요' : '정보 없음'}
                     className="mt-1 w-full rounded-lg border p-2"
                   />
                 </label>

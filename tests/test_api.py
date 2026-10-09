@@ -51,6 +51,33 @@ def test_common_welding_name_is_accepted_as_supported_work(client):
     assert response.json()['conditions']['work'] == '용접·용단'
 
 
+def test_missing_details_do_not_block_conservative_welding_checklist(client):
+    task = make_task(client, '5층 용접')
+    assert task['review_status'] == 'ready'
+    assert task['conditions']['flammable'] == '알 수 없음'
+    assert task['conditions']['ventilation'] == '알 수 없음'
+    assert client.get('/api/tasks/review-queue').json() == []
+    assert next(item for item in task['checklist'] if item['code'] == 'fire-watch')['level'] == 'required'
+    assert next(item for item in task['checklist'] if item['code'] == 'ventilation')['level'] == 'required'
+    reviewed = client.post(f"/api/tasks/{task['id']}/review", json={
+        'action': 'conditions_corrected', 'reason': '정보가 없는 조건은 보수적으로 유지합니다.'
+    })
+    assert reviewed.status_code == 200
+
+
+def test_blank_details_stay_unknown_and_no_ventilation_means_poor(client):
+    task = make_task(client, '5층 용접')
+    response = client.patch(f"/api/tasks/{task['id']}/conditions", json={
+        'flammable': '', 'ventilation': '없음', 'nearby_people': '10인', 'place': '',
+    })
+    assert response.status_code == 200
+    conditions = response.json()['conditions']
+    assert conditions['flammable'] == conditions['place'] == '알 수 없음'
+    assert conditions['ventilation'] == '불량'
+    assert conditions['nearby_people'] == '10명'
+    assert response.json()['review_status'] == 'ready'
+
+
 def test_questions_and_404(client):
     assert client.get('/api/tasks/999').status_code == 404
     task = make_task(client)
