@@ -28,6 +28,94 @@ class TrainingIn(BaseModel):
     understood: bool
 
 
+class JsaSaveIn(BaseModel):
+    task_id: int
+    title: str = Field(min_length=1, max_length=200)
+    work_summary: str = Field(min_length=1)
+    worker_inputs: str = ''
+    hazards: str = Field(min_length=1)
+    measures: str = Field(min_length=1)
+    photo_summary: str = ''
+
+
+def _jsa_out(row: sqlite3.Row) -> dict:
+    return {key: row[key] for key in (
+        'id', 'task_id', 'title', 'work_summary', 'worker_inputs', 'hazards',
+        'measures', 'photo_summary', 'created_at', 'updated_at'
+    )}
+
+
+@router.post('/jsas/draft')
+def create_jsa_draft(conn: sqlite3.Connection = Depends(get_db)):
+    task_row = conn.execute(
+        'SELECT t.* FROM tasks t WHERE EXISTS '
+        "(SELECT 1 FROM worker_forms f WHERE f.task_id = t.id) "
+        "AND date(t.created_at) = date('now','localtime') ORDER BY t.id DESC LIMIT 1"
+    ).fetchone()
+    if task_row is None:
+        raise HTTPException(status_code=409, detail='JSA 초안을 만들 작업자 보고가 아직 없습니다.')
+    task = load_task(conn, task_row['id'])
+    forms = conn.execute(
+        'SELECT f.*, w.name AS worker_name FROM worker_forms f '
+        'LEFT JOIN workers w ON w.id = f.worker_id WHERE f.task_id = ? ORDER BY f.id',
+        (task.id,),
+    ).fetchall()
+    reports = [
+        f"{row['worker_name'] or '작업자'}: {row['report_text'] or '작업 보고 없음'}"
+        + (f" / 위험·확인 사항: {row['risk_note']}" if row['risk_note'] else '')
+        for row in forms
+    ]
+    hazards = [item.title for item in task.checklist if item.level == 'required']
+    risk_notes = [row['risk_note'].strip() for row in forms if (row['risk_note'] or '').strip()]
+    evidence = conn.execute(
+        'SELECT result, observed FROM evidence_photos WHERE task_id = ? ORDER BY id', (task.id,)
+    ).fetchall()
+    photo_count = sum(1 for row in forms if row['photo_path'])
+    confirmed = sum(1 for row in evidence if row['result'] == 'confirmed')
+    observations = [row['observed'].strip() for row in evidence if (row['observed'] or '').strip()]
+    return {
+        'id': None, 'task_id': task.id,
+        'title': f"{task.worker_name or '작업자'} · {task.conditions.work} JSA",
+        'work_summary': task.text,
+        'worker_inputs': '\n'.join(reports),
+        'hazards': '\n'.join(f"• {value}" for value in [*risk_notes, *hazards]) or '• 작업 전 현장 위험요인 확인',
+        'measures': '\n'.join(f"• {item.title}: {item.note or '작업 전 이행 여부 확인'}" for item in task.checklist),
+        'photo_summary': f"작업자 첨부 사진 {photo_count}장 · 안전조치 판정 {len(evidence)}건 중 확인 {confirmed}건"
+        + ("\n" + "\n".join(f"• {value}" for value in observations) if observations else ''),
+        'created_at': None, 'updated_at': None,
+    }
+
+
+@router.get('/jsas')
+def jsas(conn: sqlite3.Connection = Depends(get_db)):
+    return [_jsa_out(row) for row in conn.execute('SELECT * FROM jsas ORDER BY id DESC')]
+
+
+@router.post('/jsas', status_code=status.HTTP_201_CREATED)
+def save_jsa(payload: JsaSaveIn, conn: sqlite3.Connection = Depends(get_db)):
+    load_task(conn, payload.task_id)
+    cursor = conn.execute(
+        'INSERT INTO jsas(task_id, title, work_summary, worker_inputs, hazards, measures, photo_summary) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?)',
+        (payload.task_id, payload.title, payload.work_summary, payload.worker_inputs,
+         payload.hazards, payload.measures, payload.photo_summary),
+    )
+    return _jsa_out(conn.execute('SELECT * FROM jsas WHERE id = ?', (cursor.lastrowid,)).fetchone())
+
+
+@router.patch('/jsas/{jsa_id}')
+def update_jsa(jsa_id: int, payload: JsaSaveIn, conn: sqlite3.Connection = Depends(get_db)):
+    cursor = conn.execute(
+        "UPDATE jsas SET title = ?, work_summary = ?, worker_inputs = ?, hazards = ?, measures = ?, "
+        "photo_summary = ?, updated_at = datetime('now','localtime') WHERE id = ?",
+        (payload.title, payload.work_summary, payload.worker_inputs, payload.hazards,
+         payload.measures, payload.photo_summary, jsa_id),
+    )
+    if cursor.rowcount == 0:
+        raise HTTPException(status_code=404, detail='JSA 기록을 찾을 수 없습니다.')
+    return _jsa_out(conn.execute('SELECT * FROM jsas WHERE id = ?', (jsa_id,)).fetchone())
+
+
 @router.get('/todos', response_model=list[TodoOut])
 def todos(task_id: int, conn: sqlite3.Connection = Depends(get_db)):
     task = load_task(conn, task_id)

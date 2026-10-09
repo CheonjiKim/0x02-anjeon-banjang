@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
   await page.goto(base);
   await page.getByRole('button', { name: '관리자 · 반장 출근하기' }).click();
   await page.getByRole('navigation').waitFor();
-  assert.deepEqual(await page.getByRole('navigation').getByRole('link').allTextContents(), ['TBM', '작업자관리', '캘린더', '기록']);
+  assert.deepEqual(await page.getByRole('navigation').getByRole('link').allTextContents(), ['TBM', '작업자관리', '캘린더', 'JSA', '기록']);
   await page.getByRole('checkbox', { name: '근로자 마감 보고 요청' }).uncheck();
   assert(await page.getByRole('button', { name: '새 체크리스트 만들기' }).isEnabled());
   await page.getByPlaceholder('예: 2층에서 용접 작업, 주변에 합판이 있습니다.').fill('2층 용접 작업, 주변에 합판');
