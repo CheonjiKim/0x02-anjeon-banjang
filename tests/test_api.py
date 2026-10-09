@@ -35,6 +35,22 @@ def test_removing_flammable_downgrades_fire_watch(client):
     assert next(item for item in response.json()['checklist'] if item['code'] == 'fire-watch')['level'] == 'recommended'
 
 
+def test_unsupported_work_is_rejected_without_changing_task(client):
+    task = make_task(client)
+    response = client.patch(f"/api/tasks/{task['id']}/conditions", json={'work': '시멘트 나르기'})
+    assert response.status_code == 422
+    assert response.json()['detail'] == '현재는 지원하지 않는 작업 종류입니다. 추후 지원될 예정입니다.'
+    saved = client.get(f"/api/tasks/{task['id']}").json()
+    assert saved['conditions'] == task['conditions']
+
+
+def test_common_welding_name_is_accepted_as_supported_work(client):
+    task = make_task(client, '각 파이프 용접해야 합니다.')
+    response = client.patch(f"/api/tasks/{task['id']}/conditions", json={'work': '용접'})
+    assert response.status_code == 200
+    assert response.json()['conditions']['work'] == '용접·용단'
+
+
 def test_questions_and_404(client):
     assert client.get('/api/tasks/999').status_code == 404
     task = make_task(client)
