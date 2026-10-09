@@ -86,9 +86,33 @@ def test_any_judge_exception_becomes_uncertain(monkeypatch, error):
 
 def test_unconfigured_llm_becomes_uncertain_not_confirmed(monkeypatch):
     monkeypatch.setenv('BANJANG_LLM', 'openai')
+    monkeypatch.delenv('BANJANG_VISION', raising=False)
     for key in ['OPENAI_API_KEY', 'BANJANG_MODEL_EXTRACT', 'BANJANG_MODEL_JUDGE']:
         monkeypatch.delenv(key, raising=False)
     assert run_evidence(ITEM, b'photo').judgement.result == 'uncertain'
+
+
+def test_vision_can_be_enabled_independently_from_text_llm(monkeypatch):
+    from app.llm import JudgeOut, VerifyOut
+    seen = {}
+
+    class FakeVision:
+        name = 'fake-vision'
+        def judge(self, item, photo_hint, photo, *, step=None):
+            seen['photo'] = photo
+            return JudgeOut(result='confirmed', observed='테스트 이미지에서 항목이 보임')
+        def verify(self, item, photo_hint, photo, first, *, step=None):
+            return VerifyOut(agrees=True, evidence='이미지에서 장비가 확인됨')
+
+    monkeypatch.setenv('BANJANG_LLM', 'mock')
+    monkeypatch.setenv('BANJANG_VISION', 'openai')
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-key')
+    monkeypatch.delenv('BANJANG_MODEL_EXTRACT', raising=False)
+    monkeypatch.setenv('BANJANG_MODEL_JUDGE', 'test-vision-model')
+    monkeypatch.setattr('app.llm.openai_client.OpenAIClient', lambda **kwargs: FakeVision())
+    result = run_evidence(ITEM, b'actual-upload-bytes')
+    assert seen['photo'] == b'actual-upload-bytes'
+    assert result.judgement.result == 'confirmed' and result.verified is True
 
 
 def test_lowering_value_without_span_is_rejected():
