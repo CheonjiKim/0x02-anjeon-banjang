@@ -31,13 +31,34 @@ def todos(task_id: int, conn: sqlite3.Connection = Depends(get_db)):
     for item in task.checklist:
         photo = latest.get(item.code)
         if photo is not None and photo['result'] != 'confirmed' and not item.resolved:
+            review = conn.execute('SELECT action, reason FROM evidence_reviews WHERE evidence_id = (SELECT id FROM evidence_photos WHERE task_id = ? AND item_code = ? ORDER BY id DESC LIMIT 1) ORDER BY id DESC LIMIT 1', (task_id, item.code)).fetchone()
             out.append(TodoOut(id=f'ev-{item.code}', kind=photo['result'], title=item.title,
-                               detail=photo['retake_hint'], observed=photo['observed'], level=item.level,
+                               detail=(f"관리자 조치: {review['action']} — {review['reason']}" if review else photo['retake_hint']), observed=photo['observed'], level=item.level,
                                photo_url=f"/api/uploads/{Path(photo['path']).name}", item_code=item.code))
     for key, title in CONDITION_TODOS.items():
         if getattr(task.conditions, key) == '알 수 없음':
             out.append(TodoOut(id=f'cond-{key}', kind='condition', title=title,
                                detail='조건을 알 수 없어 필수로 처리 중', level='required', cond_key=key))
+    return out
+
+
+@router.get('/evidence/review-queue')
+def evidence_review_queue(conn: sqlite3.Connection = Depends(get_db)):
+    rows = conn.execute("SELECT * FROM evidence_photos WHERE result <> 'confirmed' ORDER BY id DESC").fetchall()
+    out = []
+    seen = set()
+    for row in rows:
+        if row['id'] in seen:
+            continue
+        seen.add(row['id'])
+        item = next((entry for entry in _checklist(conn, row['task_id']) if entry.code == row['item_code']), None)
+        if item is None:
+            continue
+        reviews = [dict(review) for review in conn.execute('SELECT * FROM evidence_reviews WHERE evidence_id = ? ORDER BY id', (row['id'],))]
+        out.append({'id': row['id'], 'task_id': row['task_id'], 'item_code': row['item_code'],
+                    'title': item.title, 'result': row['result'], 'observed': row['observed'],
+                    'retake_hint': row['retake_hint'], 'photo_url': f"/api/uploads/{Path(row['path']).name}",
+                    'reviews': reviews})
     return out
 
 
