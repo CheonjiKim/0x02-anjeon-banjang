@@ -19,7 +19,13 @@ export default function Review() {
   const taskId = localStorage.getItem('banjang.taskId');
 
   async function load() {
-    if (!taskId) return;
+    if (!taskId) {
+      setForms(await api('/worker-forms'));
+      setItems([]);
+      setTask(null);
+      setDirty(false);
+      return;
+    }
     const [savedForms, savedTask] = await Promise.all([
       api('/worker-forms?task_id=' + taskId), api('/tasks/' + taskId),
     ]);
@@ -87,6 +93,7 @@ export default function Review() {
 
   return (
     <Screen title="관리자 검토">
+      {!taskId && <Panel><p className="font-bold">근로자 제출 관리함</p><p className="mt-2 text-sm text-ink-sub">근로자가 제출한 마감 보고를 최신순으로 확인합니다. 오늘 작업을 등록하면 작업 조건과 사진 증빙까지 연결해 검토할 수 있습니다.</p></Panel>}
       <Panel>
         <p className="text-sm text-ink-sub">작업 원문과 추출 조건을 대조합니다. 정보가 없는 조건은 현장 확인 전까지 필수 조치로 안내합니다. 이 검토는 작업 승인이 아닙니다.</p>
         {task && <p className="mt-2 text-sm text-ink-sub">조건 추출: {task.extraction_method === 'mock' ? '시연용 키워드 추출' : task.extraction_method} · 규칙 버전: {task.rule_version} · 관리자 수정: {task.condition_changes?.length ? '있음' : '없음'}</p>}
@@ -119,8 +126,9 @@ export default function Review() {
       </Panel>
       {forms.map(form => (
         <Panel key={form.id} className="mt-4">
-          <p>{form.report_text || '텍스트 보고 없음'}</p>
-          <p className="mt-2 text-sm text-warn">{form.risk_note}</p>
+          <div className="flex items-center justify-between gap-2"><b>{form.worker_name || '근로자'}</b><span className="text-xs text-ink-sub">{form.created_at}</span></div>
+          <p className="mt-3">{form.report_text || '텍스트 보고 없음'}</p>
+          {form.risk_note && <p className="mt-2 text-sm text-warn">위험 메모: {form.risk_note}</p>}
           {form.photo_url && <>
             <img className="mt-3 w-full rounded-xl" src={form.photo_url} alt="마감 보고 사진" />
             <select className="mt-3 w-full rounded-xl border border-line p-3"

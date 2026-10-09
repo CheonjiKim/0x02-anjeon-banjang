@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CalendarDays, CircleCheck, Trophy } from 'lucide-react';
 import { api } from '../lib/api.js';
+import { readSession } from '../lib/session.js';
 import { EmptyState, Panel, Screen } from '../components/ui.jsx';
 
 const EVENT_LABELS = { evidence: '사진 증빙 확인', report: '위험 신고', tbm: 'TBM 기록' };
@@ -15,7 +16,7 @@ export default function Ranking() {
   const [scores, setScores] = useState(null);
   const [error, setError] = useState('');
 
-  useEffect(() => { api('/scores').then(setScores).catch((requestError) => setError(requestError.message)); }, []);
+  useEffect(() => { const workerId = readSession()?.worker_id; api('/scores' + (workerId ? `?worker_id=${workerId}` : '')).then(setScores).catch((requestError) => setError(requestError.message)); }, []);
   if (error) return <Screen title="내 기록"><Panel><p className="text-danger">{error}</p></Panel></Screen>;
   if (!scores) return <Screen title="내 기록"><EmptyState icon={Trophy} title="기록을 불러오는 중" /></Screen>;
 
