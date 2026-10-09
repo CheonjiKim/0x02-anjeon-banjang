@@ -63,7 +63,7 @@
       "exceptions": [],
       "level": { "when_applies": "required", "otherwise": "recommended", "when_unknown": "required" },
       "evidence": { "method": "supervisor", "photo_items": [], "ask": true },
-      "source": { "basis": "legal+guideline", "articles": ["산안규칙 제241조 제1항", "산안규칙 제241조 제2항 5호", "산안규칙 제232조", "산안규칙 제239조"], "guideline": ["KOSHA GUIDE A-G-14-2026 6.1(6)"], "status": "verified_via_guide" },
+      "source": { "basis": "legal+guideline", "articles": ["산안규칙 제241조 제1항", "산안규칙 제241조 제2항 5호", "산안규칙 제232조", "산안규칙 제239조"], "guideline": ["KOSHA GUIDE A-G-14-2026 6.1(6)"], "status": "needs_check" },
       "design_note": "동시작업 금지는 가이드(권고)지만 사고 사례(2020 이천, 2025 반얀트리)를 근거로 필수로 안내"
     },
     {
@@ -78,7 +78,7 @@
       "exceptions": [],
       "level": { "when_applies": "recommended", "otherwise": "recommended", "when_unknown": "recommended" },
       "evidence": { "method": "supervisor", "photo_items": [], "ask": true, "timer_minutes": 30 },
-      "source": { "basis": "guideline", "articles": ["KOSHA GUIDE A-G-14-2026 7.1(17)"], "status": "verified_via_guide" },
+      "source": { "basis": "guideline", "articles": ["KOSHA 화재감시자 참고자료(작업 후 30분 권고)"], "status": "verified_official" },
       "design_note": "법정 의무로 단정하지 않음. 지역 소방서 안내는 1시간 이상도 있음"
     },
     {

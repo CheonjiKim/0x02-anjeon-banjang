@@ -5,8 +5,8 @@ import { api } from '../lib/api.js';
 import { AppButton, Panel, Screen, StatusBadge } from '../components/ui.jsx';
 
 const CONDITION_LABELS = {
-  work: '작업 종류', height: '작업 높이', flammable: '주변 가연물',
-  ventilation: '환기 상태', nearby_people: '주변 인원', place: '작업 장소',
+  work: '작업 종류', height: '실제 작업 높이', floor: '작업 층', flammable: '주변 가연물',
+  ventilation: '환기 상태', nearby_people: '주변 인원', place: '장소 유형',
 };
 
 export default function Checklist() {
@@ -43,15 +43,18 @@ export default function Checklist() {
             </div>
           ))}
         </div>
-        {unknown.length > 0 && <p className="mt-4 flex gap-2 text-sm text-warn"><TriangleAlert size={18} />정보가 없는 조건은 실제로 ‘없음’이 확인된 것이 아니므로 필수 조치로 안내합니다.</p>}
+        <p className="mt-3 text-sm text-ink-sub">조건 추출: {task.extraction_method === 'mock' ? '시연용 키워드 추출' : task.extraction_method} · 규칙 버전: {task.rule_version} · 관리자 수정: {task.condition_changes?.length ? '있음' : '없음'}</p>
+        {unknown.length > 0 && <div className="mt-4 text-sm text-warn"><p className="flex gap-2"><TriangleAlert size={18} />정보 없음은 현장에서 확인해야 합니다. 실제 ‘없음’으로 확정하지 않았습니다.</p><p className="mt-2">확인할 조건: {unknown.map(([key]) => CONDITION_LABELS[key]).join(', ')}</p><AppButton outline className="mt-3 w-full" onClick={() => navigate('/reviews')}>현장 조건 확인·수정</AppButton></div>}
       </Panel>
 
       <Panel className="mt-4">
-        <h2 className="font-bold">확인할 안전 수칙</h2>
+        <h2 className="font-bold">현장에서 확인할 안전 수칙</h2>
+        <p className="mt-2 text-sm text-ink-sub">‘필수’는 이 체크리스트에서 우선 확인할 항목입니다. 정보 부족으로 보수적으로 표시될 수 있으며 법적 의무 확정이나 작업 승인이 아닙니다.</p>
         {task.checklist.map((item) => (
           <div key={item.code} className="mt-4 border-t border-line pt-4 first:mt-3">
-            <div className="flex items-center justify-between gap-2"><b>{item.title}</b><StatusBadge kind={item.level} /></div>
-            {(item.note || item.source) && <small className="mt-1 block text-ink-sub">{item.note || item.source}</small>}
+            <div className="flex items-start justify-between gap-2"><b className="min-w-0">{item.title}</b><span className="shrink-0"><StatusBadge kind={item.level} label={item.level === 'required' ? '우선 확인' : undefined} /></span></div>
+            {item.note && <small className="mt-1 block text-ink-sub">{item.note}</small>}
+            {item.source && <small className="mt-1 block text-ink-sub">근거: {item.source}{item.source.includes('산안규칙 제241조') && <> · <a className="underline" href={item.source.includes('241조의2') ? 'https://law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1016870875' : 'https://www.law.go.kr/LSW/lsInfoR.do?efYd=20260302&lsiSeq=273603'} target="_blank" rel="noreferrer">국가법령정보센터 원문</a></>}{item.source.includes('KOSHA 화재감시자 참고자료') && <> · <a className="underline" href="https://kosha.or.kr/kosha/data/screening_e.do?articleNo=410955&attachNo=232257&mode=download" target="_blank" rel="noreferrer">KOSHA 자료</a></>}</small>}
           </div>
         ))}
       </Panel>

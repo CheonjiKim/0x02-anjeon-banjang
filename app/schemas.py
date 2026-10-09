@@ -22,6 +22,7 @@ class Conditions(BaseModel):
     # 조건이 '알 수 없음'이면 규칙 엔진이 안전한 쪽으로 처리
     work: str = UNKNOWN
     height: str = UNKNOWN
+    floor: str = UNKNOWN
     flammable: str = UNKNOWN
     ventilation: str = UNKNOWN
     nearby_people: str = UNKNOWN
@@ -34,10 +35,12 @@ class Conditions(BaseModel):
 class ConditionsPatch(BaseModel):
     work: str | None = None
     height: str | None = None
+    floor: str | None = None
     flammable: str | None = None
     ventilation: str | None = None
     nearby_people: str | None = None
     place: str | None = None
+    review_evidence: str | None = None
 
 
 class TaskIn(BaseModel):
@@ -87,6 +90,9 @@ class TaskOut(BaseModel):
     review_action: str | None = None
     review_note: str | None = None
     reviewed_at: str | None = None
+    extraction_method: str = 'unknown'
+    rule_version: str = '1'
+    condition_changes: list[dict] = Field(default_factory=list)
 
 
 class Judgement(BaseModel):
@@ -244,6 +250,7 @@ class TodoCard(BaseModel):
 class TaskResult(BaseModel):
     run_id: str
     conditions: Conditions
+    extraction_method: str = 'unknown'
     questions: list[str] = Field(default_factory=list)
     assumed_required: list[str] = Field(default_factory=list)
     checklist: list[ChecklistItem] = Field(default_factory=list)
