@@ -25,7 +25,8 @@ def load_task(conn: sqlite3.Connection, task_id: int) -> TaskOut:
     if row is None:
         raise HTTPException(status_code=404, detail='작업을 찾을 수 없어요')
     return TaskOut(id=row['id'], text=row['text'], conditions=Conditions(**json.loads(row['conditions'])),
-                   checklist=_checklist(conn, task_id), run_id=row['run_id'])
+                   checklist=_checklist(conn, task_id), run_id=row['run_id'],
+                   close_requested=bool(row['close_requested']))
 
 
 def _pinned(conn: sqlite3.Connection, task_id: int) -> dict[str, str]:
@@ -48,8 +49,8 @@ def _store_checklist(conn: sqlite3.Connection, task_id: int, items: list[Checkli
 def create_task(payload: TaskIn, conn: sqlite3.Connection = Depends(get_db)):
     result = run_task(payload.text, site_id=payload.site_id, worker_id=payload.worker_id)
     cursor = conn.execute(
-        'INSERT INTO tasks(site_id, worker_id, text, conditions, pinned, run_id) VALUES (?, ?, ?, ?, ?, ?)',
-        (payload.site_id, payload.worker_id, payload.text, result.conditions.model_dump_json(), '{}', result.run_id),
+        'INSERT INTO tasks(site_id, worker_id, text, conditions, pinned, run_id, close_requested) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        (payload.site_id, payload.worker_id, payload.text, result.conditions.model_dump_json(), '{}', result.run_id, payload.close_requested),
     )
     _store_checklist(conn, cursor.lastrowid, result.checklist)
     return load_task(conn, cursor.lastrowid)
