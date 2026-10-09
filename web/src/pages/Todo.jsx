@@ -15,11 +15,11 @@ export default function Todo() {
     api('/todos?task_id=' + taskId).then(setTodos).catch((requestError) => setError(requestError.message));
   }, [taskId]);
 
-  if (!taskId) return <Screen title="반장 할 일"><EmptyState icon={ListTodo} title="오늘 등록한 작업이 없어요" hint="작업 탭에서 작업을 먼저 등록해 주세요." /></Screen>;
+  if (!taskId) return <Screen title="반장 할 일"><EmptyState icon={ListTodo} title="오늘 등록한 작업이 없어요" hint="작업을 먼저 등록해 주세요." action="작업 등록으로 이동" onAction={() => navigate('/')} /></Screen>;
   return (
     <Screen title="반장 할 일">
       {error && <Panel><p className="text-danger">{error}</p></Panel>}
-      {!error && todos.length === 0 && <EmptyState icon={ListTodo} title="확인이 필요한 항목이 없어요" hint="사진 판정과 작업 조건을 계속 확인해 주세요." />}
+      {!error && todos.length === 0 && <EmptyState icon={ListTodo} title="확인이 필요한 할 일이 없어요" hint="현재 목록에 대기 항목이 없습니다. 체크리스트와 현장 조건은 계속 확인해 주세요." action="체크리스트 보기" onAction={() => navigate('/checklist')} />}
       {todos.map((todo) => <Panel key={todo.id} className="mt-4">
         <div className="flex items-start justify-between gap-3">
           <div><div className="flex items-center gap-2"><h2 className="font-bold">{todo.title}</h2>{todo.level && <StatusBadge kind={todo.level} />}</div>
