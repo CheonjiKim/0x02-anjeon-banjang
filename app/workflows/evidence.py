@@ -5,9 +5,9 @@ from app.pipeline.rules import photo_hint
 from app.schemas import ChecklistItem, EvidenceResult, Judgement, TodoCard
 from app.tracing import trace_run
 
-FAILED_OBSERVED = 'AI가 판단하지 못했어요, 반장님이 확인해 주세요'
+FAILED_OBSERVED = 'AI가 판단하지 못했어요, 관리자 검토가 필요합니다.'
 FAILED = Judgement(result='uncertain', observed=FAILED_OBSERVED,
-                   retake_hint='반장님이 직접 확인해 주세요')
+                   retake_hint='사진을 다시 촬영하거나 관리자가 직접 확인해 주세요')
 REJECTED_HINT = 'AI가 확실히 확인하지 못했어요. 조치가 잘 보이게 다시 찍거나 반장님이 직접 확인해 주세요'
 
 

@@ -38,6 +38,11 @@ CREATE TABLE IF NOT EXISTS tasks (
     conditions TEXT NOT NULL,
     pinned TEXT,
     run_id TEXT,
+    review_status TEXT NOT NULL DEFAULT 'ready',
+    review_reason TEXT,
+    review_action TEXT,
+    review_note TEXT,
+    reviewed_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
 CREATE TABLE IF NOT EXISTS checklist_items (
@@ -60,6 +65,14 @@ CREATE TABLE IF NOT EXISTS evidence_photos (
     observed TEXT,
     retake_hint TEXT,
     run_id TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+);
+CREATE TABLE IF NOT EXISTS evidence_reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    evidence_id INTEGER NOT NULL REFERENCES evidence_photos(id),
+    action TEXT NOT NULL CHECK(action IN ('retake_requested', 'confirmed_by_manager', 'not_confirmed')),
+    reason TEXT NOT NULL,
+    reviewer TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
 CREATE TABLE IF NOT EXISTS score_events (
@@ -118,6 +131,11 @@ def init_db(path: str | Path) -> None:
         # Existing local demo databases predate these columns. SQLite has no
         # portable ADD COLUMN IF NOT EXISTS, so inspect before each migration.
         _add_column(conn, 'tasks', 'close_requested INTEGER NOT NULL DEFAULT 0')
+        _add_column(conn, 'tasks', "review_status TEXT NOT NULL DEFAULT 'ready'")
+        _add_column(conn, 'tasks', 'review_reason TEXT')
+        _add_column(conn, 'tasks', 'review_action TEXT')
+        _add_column(conn, 'tasks', 'review_note TEXT')
+        _add_column(conn, 'tasks', 'reviewed_at TEXT')
         _add_column(conn, 'tbm_logs', "transcript TEXT NOT NULL DEFAULT ''")
         _add_column(conn, 'worker_forms', "report_text TEXT NOT NULL DEFAULT ''")
         _add_column(conn, 'worker_forms', 'photo_path TEXT')
