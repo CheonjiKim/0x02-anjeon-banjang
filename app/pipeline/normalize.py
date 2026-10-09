@@ -32,7 +32,7 @@ def normalize(c: Conditions, evidence: dict[str, str], text: str) -> tuple[Condi
         value = original.strip() or UNKNOWN
         allowed = {
             'work': value in WORKS,
-            'height': re.fullmatch(r'\d+층|\d+m|지상|옥상', value) is not None,
+            'height': re.fullmatch(r'\d+(?:\.\d+)?m|지상', value) is not None,
             'floor': re.fullmatch(r'\d+층', value) is not None,
             'flammable': value in FLAMMABLES,
             'ventilation': value in {'양호', '불량'},
@@ -54,7 +54,13 @@ def normalize(c: Conditions, evidence: dict[str, str], text: str) -> tuple[Condi
                 # 원문에 같은 단어가 있어도 다른 조건의 부정 표현이면 근거가 아니다.
                 from app.pipeline.extract import extract_with_spans
                 extracted, spans = extract_with_spans(text)
-                if getattr(extracted, key) != value or spans.get(key) != span:
+                # A longer verbatim quote is valid if it contains the same
+                # contextual match. Recheck the quote itself as well as the
+                # whole input, so an unrelated "없음" cannot lower this field.
+                quoted, quoted_spans = extract_with_spans(span)
+                if (getattr(extracted, key) != value or getattr(quoted, key) != value
+                        or not spans.get(key) or spans[key] not in span
+                        or quoted_spans.get(key) != spans[key]):
                     dropped[key] = f"안전을 낮추는 값 '{value}'의 문맥 근거가 없음"
                     value = UNKNOWN
         values[key] = value

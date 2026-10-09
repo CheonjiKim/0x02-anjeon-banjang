@@ -27,6 +27,7 @@ export default function Eval() {
     <Panel><p className="text-sm text-ink-sub">최근 평가 파일</p><p className="mt-1 font-bold break-all">{report.file}</p><p className="mt-2 text-sm text-ink-sub">평가 수치는 개발 검증용이며 현장 안전 판단을 대신하지 않습니다.</p><p className="mt-3 rounded-xl bg-warn-soft p-3 text-sm font-bold">사진 판정: {report.dataset?.photo_judge || '평가 모드 정보 없음'}{report.dataset?.photo_judge?.includes('simulate') || report.dataset?.llm === 'mock' ? ' · 모의 결과이며 실제 모델 정확도·비용·속도가 아닙니다.' : ''}</p><p className="mt-2 text-sm text-ink-sub">{report.dataset?.source}</p></Panel>
     {Object.entries(report.results || {}).map(([key, result]) => <Panel key={key} className="mt-4">
       <h2 className="font-bold">{result.variant_label || key}</h2>
+      <p className="mt-3 rounded-xl bg-gray-50 p-3 text-sm">API 추정 비용: {result.cost?.cost_usd?.total == null ? '미산정 — 모델 단가 또는 사용량을 확인해 주세요.' : `$${Number(result.cost.cost_usd.total).toFixed(6)} · 캐시 할인 반영, 세금 제외`}</p>
       <div className="mt-4 grid grid-cols-2 gap-2">
         <Metric label="오승인" value={result.false_approvals?.total} suffix="건" />
         <Metric label="작업·조건 정확도" value={result.extraction?.overall_accuracy_pct} suffix="%" />
