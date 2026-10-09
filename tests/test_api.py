@@ -62,3 +62,31 @@ def test_verify_rejection_becomes_uncertain_without_points(client):
     assert response.json()['points'] == 0
     assert response.json()['first_result'] == 'confirmed'
     assert response.json()['verified'] is False
+
+
+@pytest.mark.parametrize('result', ['uncertain', 'not_visible'])
+def test_non_confirmed_becomes_todo(client, result):
+    task = make_task(client, DEMO + ', 환기 양호')
+    response = client.post('/api/evidence', data={
+        'task_id': str(task['id']), 'item_code': 'extinguisher', 'forced_result': result,
+    }, files={'photo': ('a.jpg', b'fake', 'image/jpeg')})
+    assert response.status_code == 201
+    todos = client.get('/api/todos', params={'task_id': task['id']}).json()
+    assert any(todo['kind'] == result and todo['item_code'] == 'extinguisher' for todo in todos)
+    assert client.get(todos[0]['photo_url']).content == b'fake'
+
+
+def test_report_tbm_and_worker_form(client):
+    task = make_task(client)
+    assert client.post('/api/reports').json() == {'points': 5}
+    assert client.post('/api/tbm', json={'task_id': task['id'], 'points': ['화재감시자 배치'], 'attendees': '김OO'}).status_code == 201
+    assert client.post('/api/worker-forms', json={'task_id': task['id'], 'understood': True, 'ppe_worn': True}).status_code == 201
+
+
+def test_resolve_removes_todo_without_points(client):
+    task = make_task(client, FULL)
+    client.post('/api/evidence', data={'task_id': str(task['id']), 'item_code': 'extinguisher', 'forced_result': 'uncertain'},
+                files={'photo': ('a.jpg', b'fake', 'image/jpeg')})
+    assert client.post(f"/api/tasks/{task['id']}/items/extinguisher/resolve").status_code == 200
+    assert client.get('/api/todos', params={'task_id': task['id']}).json() == []
+    assert client.get('/api/scores').json()['total'] == 0
