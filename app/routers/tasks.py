@@ -4,6 +4,7 @@ import json
 import sqlite3
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 
 from app.db import get_db
 from app.pipeline.risk import build_risk_assessment
@@ -12,6 +13,18 @@ from app.workflows import CONDITION_QUESTIONS, QUESTION_OPTIONS, run_task
 
 
 router = APIRouter(prefix='/api/tasks', tags=['tasks'])
+
+
+class TaskReviewIn(BaseModel):
+    action: str
+    reason: str = Field(min_length=3)
+
+
+def _task_state(conditions: Conditions) -> tuple[str, str | None]:
+    # UNKNOWN work still produces the full conservative checklist; other unknown
+    # conditions leave safety-critical requirements unresolved for a manager.
+    unknown = [key for key in conditions.unknown_keys() if key != 'work']
+    return ('pending', '미확인 필수 조건: ' + ', '.join(unknown)) if unknown else ('ready', None)
 
 
 def _checklist(conn: sqlite3.Connection, task_id: int) -> list[ChecklistItem]:
@@ -26,7 +39,9 @@ def load_task(conn: sqlite3.Connection, task_id: int) -> TaskOut:
         raise HTTPException(status_code=404, detail='작업을 찾을 수 없어요')
     return TaskOut(id=row['id'], text=row['text'], conditions=Conditions(**json.loads(row['conditions'])),
                    checklist=_checklist(conn, task_id), run_id=row['run_id'],
-                   close_requested=bool(row['close_requested']))
+                   close_requested=bool(row['close_requested']), review_status=row['review_status'],
+                   review_reason=row['review_reason'], review_action=row['review_action'],
+                   review_note=row['review_note'], reviewed_at=row['reviewed_at'])
 
 
 def _pinned(conn: sqlite3.Connection, task_id: int) -> dict[str, str]:
@@ -47,13 +62,21 @@ def _store_checklist(conn: sqlite3.Connection, task_id: int, items: list[Checkli
 
 @router.post('', response_model=TaskOut, status_code=status.HTTP_201_CREATED)
 def create_task(payload: TaskIn, conn: sqlite3.Connection = Depends(get_db)):
-    result = run_task(payload.text, site_id=payload.site_id, worker_id=payload.worker_id)
+    result = run_task(payload.text, site_id=payload.site_id, worker_id=payload.worker_id,
+                      scenario=payload.scenario)
+    review_status, review_reason = _task_state(result.conditions)
     cursor = conn.execute(
-        'INSERT INTO tasks(site_id, worker_id, text, conditions, pinned, run_id, close_requested) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        (payload.site_id, payload.worker_id, payload.text, result.conditions.model_dump_json(), '{}', result.run_id, payload.close_requested),
+        'INSERT INTO tasks(site_id, worker_id, text, conditions, pinned, run_id, close_requested, review_status, review_reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        (payload.site_id, payload.worker_id, payload.text, result.conditions.model_dump_json(), '{}', result.run_id, payload.close_requested, review_status, review_reason),
     )
     _store_checklist(conn, cursor.lastrowid, result.checklist)
     return load_task(conn, cursor.lastrowid)
+
+
+@router.get('/review-queue')
+def task_review_queue(conn: sqlite3.Connection = Depends(get_db)):
+    ids = [row['id'] for row in conn.execute("SELECT id FROM tasks WHERE review_status = 'pending' ORDER BY id DESC")]
+    return [load_task(conn, task_id).model_dump() for task_id in ids]
 
 
 @router.get('/{task_id}', response_model=TaskOut)
@@ -90,9 +113,24 @@ def patch_conditions(task_id: int, payload: ConditionsPatch, conn: sqlite3.Conne
     pinned.update(patch)
     result = run_task(task.text, site_id=conn.execute('SELECT site_id FROM tasks WHERE id = ?', (task_id,)).fetchone()['site_id'],
                       pinned=pinned)
-    conn.execute('UPDATE tasks SET conditions = ?, pinned = ?, run_id = ? WHERE id = ?',
-                 (result.conditions.model_dump_json(), json.dumps(pinned, ensure_ascii=False), result.run_id, task_id))
+    review_status, review_reason = _task_state(result.conditions)
+    conn.execute('UPDATE tasks SET conditions = ?, pinned = ?, run_id = ?, review_status = ?, review_reason = ?, review_action = NULL, review_note = NULL, reviewed_at = NULL WHERE id = ?',
+                 (result.conditions.model_dump_json(), json.dumps(pinned, ensure_ascii=False), result.run_id, review_status, review_reason, task_id))
     _store_checklist(conn, task_id, result.checklist)
+    return load_task(conn, task_id)
+
+
+@router.post('/{task_id}/review', response_model=TaskOut)
+def review_task(task_id: int, payload: TaskReviewIn, conn: sqlite3.Connection = Depends(get_db)):
+    task = load_task(conn, task_id)
+    if task.review_status not in {'pending', 'ready'}:
+        raise HTTPException(status_code=409, detail='검토 대기 중인 작업이 아닙니다.')
+    if payload.action not in {'conditions_corrected', 'cancelled'}:
+        raise HTTPException(status_code=422, detail='지원하지 않는 관리자 조치입니다.')
+    if payload.action == 'conditions_corrected' and any(key != 'work' for key in task.conditions.unknown_keys()):
+        raise HTTPException(status_code=409, detail='먼저 원문 조건을 수정해 미확인 항목을 해결해 주세요.')
+    conn.execute("UPDATE tasks SET review_action = ?, review_note = ?, reviewed_at = datetime('now','localtime'), review_status = ? WHERE id = ?",
+                 (payload.action, payload.reason, 'cancelled' if payload.action == 'cancelled' else 'reviewed', task_id))
     return load_task(conn, task_id)
 
 

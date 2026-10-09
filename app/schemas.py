@@ -45,6 +45,7 @@ class TaskIn(BaseModel):
     site_id: int = 1
     worker_id: int = 1
     close_requested: bool = Field(True, exclude=True)
+    scenario: str | None = Field(None, exclude=True)
 
 
 class RuleCondition(BaseModel):
@@ -81,6 +82,11 @@ class TaskOut(BaseModel):
     checklist: list[ChecklistItem]
     run_id: str | None = None
     close_requested: bool = False
+    review_status: str = 'ready'
+    review_reason: str | None = None
+    review_action: str | None = None
+    review_note: str | None = None
+    reviewed_at: str | None = None
 
 
 class Judgement(BaseModel):
@@ -97,6 +103,21 @@ class EvidenceOut(Judgement):
     run_id: str | None = None
     first_result: Result | None = None  # 검증 전 1차 판정
     verified: bool | None = None  # None은 검증 안 함, False는 승인 거부
+
+
+class EvidenceReviewIn(BaseModel):
+    action: Literal['retake_requested', 'confirmed_by_manager', 'not_confirmed']
+    reason: str
+    reviewer: str = '관리자'
+
+
+class EvidenceReviewOut(BaseModel):
+    id: int
+    evidence_id: int
+    action: str
+    reason: str
+    reviewer: str
+    created_at: str
 
 
 class ScoreEvent(BaseModel):

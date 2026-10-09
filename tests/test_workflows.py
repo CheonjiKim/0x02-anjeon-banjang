@@ -1,6 +1,6 @@
 import pytest
 
-from app.schemas import ChecklistItem
+from app.schemas import UNKNOWN, ChecklistItem
 from app.tracing import read_traces
 from app.workflows import QUESTION_OPTIONS, run_evidence, run_task, run_tbm
 
@@ -73,12 +73,15 @@ def test_tbm_clean_when_all_said():
     assert run_tbm(points, task.checklist).missing == []
 
 
-def test_extract_falls_back_to_keywords_when_llm_unavailable(monkeypatch):
+def test_extract_failure_keeps_conditions_unknown_when_llm_unavailable(monkeypatch):
     monkeypatch.setenv('BANJANG_LLM', 'openai')
     for key in ['OPENAI_API_KEY', 'BANJANG_MODEL_EXTRACT', 'BANJANG_MODEL_JUDGE']:
         monkeypatch.delenv(key, raising=False)
-    assert run_task(DEMO).conditions.flammable == '합판'
-    assert read_traces()[-1]['steps'][0]['meta']['fallback'].startswith('keyword')
+    result = run_task(DEMO)
+    assert all(value == UNKNOWN for value in result.conditions.model_dump().values())
+    assert set(result.assumed_required) == set(result.conditions.model_dump())
+    assert 'failure' in read_traces()[-1]['steps'][0]['meta']
+    assert 'fallback' not in read_traces()[-1]['steps'][0]['meta']
 
 
 def test_question_options_match_the_foreman_patch_contract():
