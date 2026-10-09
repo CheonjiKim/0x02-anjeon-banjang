@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { HardHat, ShieldCheck, UsersRound } from 'lucide-react';
 import { AppButton, LegalNote, Panel, STROKE } from '../components/ui.jsx';
+import { signIn } from '../lib/session.js';
 
 const roles = {
   foreman: {
@@ -24,19 +25,12 @@ export default function LoginSample({ onLogin }) {
   const [error, setError] = useState('');
   const selected = roles[role];
 
-  async function submit(event) {
+  function submit(event) {
     event.preventDefault();
     setError('');
-    try {
-      const response = await fetch('/api/login', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ login_id: loginId, password }),
-      });
-      if (!response.ok) throw new Error();
-      onLogin(await response.json());
-    } catch {
-      setError('아이디 또는 비밀번호를 다시 확인해 주세요.');
-    }
+    const user = signIn(loginId, password);
+    if (!user) return setError('아이디 또는 비밀번호를 다시 확인해 주세요.');
+    onLogin(user);
   }
 
   return (
@@ -80,7 +74,7 @@ export default function LoginSample({ onLogin }) {
         </Panel>
 
         {error && <p role="alert" className="rounded-2xl bg-danger-soft px-4 py-3 text-center text-[15px] font-bold text-danger">{error}</p>}
-        <AppButton big className="w-full">{selected.label}으로 로그인</AppButton>
+        <AppButton big className="w-full">{selected.label} 출근하기</AppButton>
       </form>
       <LegalNote />
     </main>
