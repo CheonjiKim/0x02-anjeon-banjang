@@ -65,3 +65,21 @@ def test_lowering_patch_requires_evidence(client):
     assert updated['condition_changes'][-1]['before_value'] == '합판'
     assert updated['condition_changes'][-1]['after_value'] == '없음'
     assert updated['condition_changes'][-1]['evidence'] == '현장 가연물 제거 확인'
+
+
+@pytest.mark.parametrize(('field', 'value'), [
+    ('height', '10층 건물'), ('floor', '10층 건물'), ('place', '건물'),
+    ('ventilation', '좋음'), ('flammable', '모르겠음'),
+])
+def test_manager_cannot_store_ambiguous_condition_as_confirmed(client, field, value):
+    task = client.post('/api/tasks', json={'text': '용접'}).json()
+    response = client.patch(f"/api/tasks/{task['id']}/conditions", json={field: value, 'review_evidence': '현장 확인'})
+    assert response.status_code == 422
+    assert client.get(f"/api/tasks/{task['id']}").json()['conditions'][field] == UNKNOWN
+
+
+def test_manager_nearby_people_count_is_normalized(client):
+    task = client.post('/api/tasks', json={'text': '용접'}).json()
+    response = client.patch(f"/api/tasks/{task['id']}/conditions", json={'nearby_people': '일반인 10명'})
+    assert response.status_code == 200
+    assert response.json()['conditions']['nearby_people'] == '10명'

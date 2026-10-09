@@ -154,7 +154,7 @@ def test_task_extraction_failure_stays_pending_until_conditions_fixed(client):
         'action': 'conditions_corrected', 'reason': '작업 지시 원문과 비교 예정'
     }).status_code == 409
     response = client.patch(f"/api/tasks/{task['id']}/conditions", json={
-        'work': '용접·용단', 'height': '2층', 'flammable': '합판', 'ventilation': '양호',
+        'work': '용접·용단', 'height': '2m', 'floor': '2층', 'flammable': '합판', 'ventilation': '양호',
         'nearby_people': '없음', 'place': '실내', 'review_evidence': '관리자가 현장 주변과 환기 상태를 확인',
     })
     assert response.json()['review_status'] == 'ready'
