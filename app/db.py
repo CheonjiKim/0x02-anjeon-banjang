@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS users (
     password TEXT NOT NULL,
     role TEXT NOT NULL CHECK(role IN ('admin', 'worker')),
     name TEXT NOT NULL,
-    team TEXT
+    team TEXT,
+    worker_id INTEGER REFERENCES workers(id)
 );
 CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY,
@@ -111,6 +112,13 @@ CREATE TABLE IF NOT EXISTS worker_forms (
     ppe_worn INTEGER NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
+CREATE TABLE IF NOT EXISTS training_reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    worker_id INTEGER NOT NULL REFERENCES workers(id),
+    course TEXT NOT NULL,
+    understood INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+);
 CREATE TABLE IF NOT EXISTS incidents (
     id INTEGER PRIMARY KEY,
     site_id INTEGER NOT NULL REFERENCES sites(id),
@@ -150,6 +158,8 @@ def init_db(path: str | Path) -> None:
         _add_column(conn, 'tbm_logs', "transcript TEXT NOT NULL DEFAULT ''")
         _add_column(conn, 'worker_forms', "report_text TEXT NOT NULL DEFAULT ''")
         _add_column(conn, 'worker_forms', 'photo_path TEXT')
+        _add_column(conn, 'worker_forms', 'worker_id INTEGER REFERENCES workers(id)')
+        _add_column(conn, 'users', 'worker_id INTEGER REFERENCES workers(id)')
         if conn.execute('SELECT COUNT(*) FROM sites').fetchone()[0] == 0:
             conn.execute("INSERT INTO sites(id, name) VALUES (1, '기본 현장')")
             conn.executemany(
@@ -161,6 +171,7 @@ def init_db(path: str | Path) -> None:
                 'INSERT INTO users(login_id, password, role, name, team) VALUES (?, ?, ?, ?, ?)',
                 [('admin', '1234', 'admin', '김반장', '우리 팀'), ('worker', '1234', 'worker', '김작업', '우리 팀')],
             )
+        conn.execute("UPDATE users SET worker_id = 2 WHERE login_id = 'worker' AND worker_id IS NULL")
         conn.commit()
 
 

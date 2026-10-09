@@ -25,10 +25,10 @@ export default function LoginSample({ onLogin }) {
   const [error, setError] = useState('');
   const selected = roles[role];
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
     setError('');
-    const user = signIn(loginId, password);
+    const user = await signIn(loginId, password);
     if (!user) return setError('아이디 또는 비밀번호를 다시 확인해 주세요.');
     onLogin(user);
   }
