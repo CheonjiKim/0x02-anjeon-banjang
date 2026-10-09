@@ -39,7 +39,7 @@
 
 ## 서버와 만나는 지점
 
-현재 작업 워크플로우는 `app/workflows/task.py`에서 `app/pipeline/rules.py`의 `build_checklist(Conditions)`를 호출한다. 이 함수는 아직 하드코딩된 다섯 항목(`fire-watch`, `extinguisher`, `spark-cover`, `ventilation`, `area-sign`)만 반환하며, 이 폴더의 JSON을 읽지 않는다.
+현재 작업 워크플로우는 `app/workflows/task.py`에서 `app/pipeline/rules.py`의 `build_checklist(Conditions)`를 호출한다. 이 함수는 네 작업의 PoC 항목 코드와 조건 분기(가연물·환기·작업 높이)를 사용한다. JSON은 수칙 근거와 시나리오를 검토하는 원본이며, 법적 근거가 `needs_check`인 항목은 화면에서 PoC 안내로만 표시한다.
 
 따라서 4개 PoC 작업을 실제 체크리스트에 반영하려면, 후속 규칙 엔진이 `build_checklist(Conditions) -> list[ChecklistItem]` 인터페이스를 유지한 채 JSON과 조건을 연결해야 한다. 이때 필요한 미결정 사항은 다음과 같다.
 
