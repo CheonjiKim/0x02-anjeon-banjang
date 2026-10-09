@@ -9,7 +9,7 @@ from app.schemas import Conditions, TaskResult
 from app.tracing import trace_run
 
 CONDITION_QUESTIONS = {
-    'work': '어떤 작업인가요? (예: 용접·용단, 그라인더·절단)',
+    'work': '어떤 작업인가요? (예: 용접·용단, 절단·원형톱, 도장·방수, 사다리·말비계)',
     'height': '작업 높이는 어떻게 되나요? (예: 2층, 지상)',
     'flammable': '주변에 불에 타는 물건이 있나요? (예: 합판, 없음)',
     'ventilation': '환기는 되나요? (예: 양호, 밀폐)',
@@ -17,7 +17,7 @@ CONDITION_QUESTIONS = {
     'place': '어디에서 하나요? (예: 지하 주차장, 외부)',
 }
 QUESTION_OPTIONS = {
-    'work': ['용접·용단', '그라인더·절단'],
+    'work': ['용접·용단', '절단·원형톱', '도장·방수', '사다리·말비계'],
     'height': ['지상', '2층', '3층'],
     'flammable': ['합판', '스티로폼', '없음'],
     'ventilation': ['양호', '불량'],
@@ -60,7 +60,7 @@ def run_task(text: str, *, site_id: int = 1, worker_id: int = 1,
             questions = [CONDITION_QUESTIONS[key] for key in unknown]
             step.output = {'questions': questions, 'assumed_required': unknown}
         with trace.step('rules', conditions=conditions) as step:
-            checklist = build_checklist(conditions)
+            checklist = build_checklist(conditions, task_text=text)
             step.output = [item.model_dump() for item in checklist]
         with trace.step('risk', conditions=conditions) as step:
             risks = build_risk_assessment(conditions)
