@@ -76,6 +76,7 @@ class ChecklistItem(BaseModel):
     level: Level
     note: str | None = None
     resolved: bool = False
+    attached: bool = False
 
 
 class TaskOut(BaseModel):
