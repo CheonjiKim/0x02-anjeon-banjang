@@ -34,7 +34,9 @@ def _task_state(conditions: Conditions) -> tuple[str, str | None]:
 def _checklist(conn: sqlite3.Connection, task_id: int) -> list[ChecklistItem]:
     rows = conn.execute('SELECT * FROM checklist_items WHERE task_id = ? ORDER BY id', (task_id,)).fetchall()
     return [ChecklistItem(code=row['code'], title=row['title'], source=row['source'], level=row['level'],
-                          note=row['note'], resolved=bool(row['resolved'])) for row in rows]
+                          note=row['note'], resolved=bool(row['resolved']), attached=bool(conn.execute(
+                              'SELECT 1 FROM evidence_photos WHERE task_id = ? AND item_code = ? LIMIT 1',
+                              (task_id, row['code'])).fetchone())) for row in rows]
 
 
 def load_task(conn: sqlite3.Connection, task_id: int) -> TaskOut:

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { AlertTriangle, TriangleAlert } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, TriangleAlert } from 'lucide-react';
 import { api } from '../lib/api.js';
 import { AppButton, Panel, Screen, StatusBadge } from '../components/ui.jsx';
 
@@ -57,7 +57,7 @@ export default function Checklist() {
         <p className="mt-2 text-sm text-ink-sub">‘필수’는 이 체크리스트에서 우선 확인할 항목입니다. 정보 부족으로 보수적으로 표시될 수 있으며 법적 의무 확정이나 작업 승인이 아닙니다.</p>
         {task.checklist.map((item) => (
           <div key={item.code} className="mt-4 border-t border-line pt-4 first:mt-3">
-            <div className="flex items-start justify-between gap-2"><b className="min-w-0">{item.title}</b><span className="shrink-0"><StatusBadge kind={item.level} label={item.level === 'required' ? '우선 확인' : undefined} /></span></div>
+            <div className="flex items-start justify-between gap-2"><b className="flex min-w-0 items-center gap-1">{(item.attached || item.resolved) && <CheckCircle2 size={18} className="shrink-0 text-ok" aria-label="완료" />}{item.title}{(item.attached || item.resolved) && <span className="text-sm text-ok">완료</span>}</b><span className="shrink-0"><StatusBadge kind={item.level} label={item.level === 'required' ? '우선 확인' : undefined} /></span></div>
             {item.note && <small className="mt-1 block text-ink-sub">{item.note}</small>}
             {item.source && <small className="mt-1 block text-ink-sub">근거: {item.source}{item.source.includes('산안규칙 제241조') && <> · <a className="underline" href={item.source.includes('241조의2') ? 'https://law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1016870875' : 'https://www.law.go.kr/LSW/lsInfoR.do?efYd=20260302&lsiSeq=273603'} target="_blank" rel="noreferrer">국가법령정보센터 원문</a></>}{item.source.includes('KOSHA 화재감시자 참고자료') && <> · <a className="underline" href="https://kosha.or.kr/kosha/data/screening_e.do?articleNo=410955&attachNo=232257&mode=download" target="_blank" rel="noreferrer">KOSHA 자료</a></>}</small>}
           </div>
