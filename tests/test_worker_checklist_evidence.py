@@ -12,6 +12,9 @@ def test_assigned_worker_photo_marks_checklist_item_attached(tmp_path):
             'task_id': task['id'], 'item_code': code, 'worker_id': 2,
         }, files={'photo': ('check.jpg', b'photo', 'image/jpeg')})
         assert saved.status_code == 201
+        updated_task = client.get(f"/api/tasks/{task['id']}").json()
+        assert next(item for item in updated_task['checklist'] if item['code'] == code)['attached'] is True
+        assert next(item for item in updated_task['checklist'] if item['code'] == code)['resolved'] is False
         attached = client.get(f"/api/evidence/task/{task['id']}", params={'worker_id': 2}).json()
         assert attached[0]['item_code'] == code
         assert attached[0]['photo_url'].startswith('/api/uploads/')
