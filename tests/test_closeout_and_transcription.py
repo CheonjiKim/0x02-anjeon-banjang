@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import create_app
+from app.llm.transcribe import transcribe_audio
 
 
 @pytest.fixture
@@ -27,6 +28,20 @@ def test_transcription_uses_audio_client(client, monkeypatch):
 def test_transcription_rejects_invalid_suffix(client):
     response = client.post('/api/transcriptions', files={'audio': ('voice.txt', b'audio', 'text/plain')})
     assert response.status_code == 422
+
+
+def test_transcription_uses_recommended_model_and_korean_hint(monkeypatch):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-key')
+    monkeypatch.delenv('BANJANG_TRANSCRIPTION_MODEL', raising=False)
+
+    class FakeHttp:
+        def post(self, url, *, data, files, headers, timeout):
+            assert data == {'model': 'gpt-transcribe', 'response_format': 'json', 'languages[]': 'ko'}
+            assert files['file'] == ('voice.webm', b'audio', 'audio/webm')
+            assert headers['Authorization'] == 'Bearer test-key'
+            return type('Response', (), {'status_code': 200, 'json': lambda self: {'text': '용접 작업입니다.'}})()
+
+    assert transcribe_audio('voice.webm', b'audio', 'audio/webm', http=FakeHttp()) == '용접 작업입니다.'
 
 
 def test_closeout_photo_and_manager_review(client, tmp_path):
