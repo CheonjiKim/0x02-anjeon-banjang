@@ -1,6 +1,11 @@
-import { HardHat } from 'lucide-react';
-import { EmptyState, Screen } from '../components/ui.jsx';
-
+﻿import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AlertTriangle, ClipboardList, HardHat } from 'lucide-react';
+import { post } from '../lib/api.js';
+import Recorder from '../components/Recorder.jsx';
+import { AppButton, Panel, Screen, SectionTitle } from '../components/ui.jsx';
 export default function TaskInput() {
-  return <Screen title="오늘 작업"><EmptyState icon={HardHat} title="준비 중" /></Screen>;
+ const [text, setText] = useState(''); const [closeRequested, setCloseRequested] = useState(true); const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const navigate = useNavigate();
+ async function submit(event) { event.preventDefault(); if (!text.trim()) return setError('작업 내용을 입력해 주세요.'); setBusy(true); setError(''); try { const task = await post('/tasks', { text, close_requested: closeRequested }); localStorage.setItem('banjang.taskId', task.id); navigate('/checklist', { state: { task } }); } catch (err) { setError(err.message); } finally { setBusy(false); } }
+ return <Screen title="오늘 작업"><form onSubmit={submit}><Panel><SectionTitle>작업 지시</SectionTitle><p className="mb-3 text-sm text-ink-sub">말하거나 직접 입력하면 수칙 DB의 체크리스트를 만듭니다.</p><textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="예: 2층에서 그라인더 절단 작업, 주변에 합판이 있습니다." className="min-h-32 w-full rounded-2xl border border-line p-4" /><Recorder onTranscript={(value) => setText((current) => current ? current + ' ' + value : value)} /></Panel><Panel className="mt-4"><label className="flex items-start gap-3"><input className="mt-1 h-5 w-5" type="checkbox" checked={closeRequested} onChange={(e) => setCloseRequested(e.target.checked)} /><span><b>근로자 마감 보고 요청</b><small className="mt-1 block text-ink-sub">작업 후 텍스트와 사진을 선택적으로 받습니다.</small></span></label></Panel>{error && <p role="alert" className="mx-[22px] mt-3 text-sm text-danger">{error}</p>}<div className="mx-[22px] mt-5"><AppButton big disabled={busy} className="w-full"><HardHat className="mr-2 inline" size={20} />{busy ? '체크리스트 만드는 중…' : '안전 체크리스트 만들기'}</AppButton></div><Panel className="mt-5"><div className="flex gap-3"><ClipboardList className="text-brand-primary" /><p className="text-sm text-ink-sub">AI는 수칙 DB에서 항목을 고르고, 법률을 해석하거나 작업을 승인하지 않습니다.</p></div></Panel><button type="button" onClick={() => navigate('/incidents')} className="mx-[22px] mt-4 flex items-center gap-2 text-sm font-bold text-danger"><AlertTriangle size={18} />아차사고 신고·조치 확인</button></form></Screen>;
 }
