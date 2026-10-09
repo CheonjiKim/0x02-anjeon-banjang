@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 
 from app.db import get_db, team_of
 from app.routers.tasks import _checklist, load_task
-from app.schemas import EvidenceOut, IncidentIn, ScoresOut, TbmIn, TbmOut, TodoOut, WorkerFormIn, WorkerFormOut
+from app.schemas import EvidenceOut, IncidentIn, ScoresOut, TbmIn, TbmLatestOut, TbmOut, TodoOut, WorkerFormIn, WorkerFormOut
 from app.workflows import run_tbm
 from scoring import award_report, award_tbm, history, stamps_for, streaks, team_ranking, worker_ranking
 
@@ -110,6 +110,18 @@ def tbm(payload: TbmIn, conn: sqlite3.Connection = Depends(get_db)):
     row = conn.execute('SELECT site_id, worker_id FROM tasks WHERE id = ?', (payload.task_id,)).fetchone()
     award_tbm(conn, site_id=row['site_id'], task_id=payload.task_id, worker_id=row['worker_id'] or 1)
     return TbmOut(id=cursor.lastrowid, missing=result.missing, run_id=result.run_id)
+
+
+@router.get('/tbm/latest', response_model=TbmLatestOut)
+def latest_tbm(task_id: int, conn: sqlite3.Connection = Depends(get_db)):
+    task = load_task(conn, task_id)
+    row = conn.execute('SELECT * FROM tbm_logs WHERE task_id = ? ORDER BY id DESC LIMIT 1', (task_id,)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail='저장된 TBM이 없습니다.')
+    spoken = [row['transcript']] if row['transcript'].strip() else json.loads(row['points'])
+    result = run_tbm(spoken, _checklist(conn, task_id), task_id=task.id)
+    return TbmLatestOut(id=row['id'], task_id=task_id, transcript=row['transcript'], memo=row['memo'],
+                        attendees=row['attendees'], missing=result.missing, created_at=row['created_at'])
 
 
 @router.post('/worker-forms', status_code=status.HTTP_201_CREATED)

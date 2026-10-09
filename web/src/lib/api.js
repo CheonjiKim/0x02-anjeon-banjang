@@ -6,7 +6,9 @@ export async function api(path, options = {}) {
   const response = await fetch('/api' + path, request);
   if (!response.ok) {
     const payload = typeof response.json === 'function' ? await response.json().catch(() => ({})) : {};
-    throw new Error(payload.detail || `${response.status} ${path}`);
+    const error = new Error(payload.detail || `${response.status} ${path}`);
+    error.status = response.status;
+    throw error;
   }
   return response.json();
 }
